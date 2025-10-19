@@ -27,7 +27,7 @@ export class UsersController {
   @Get()
   findAll() {
     // return this.usersService.findAll();
-    return this.config.getOrThrow<string>('TEST');
+    return 'lon';
   }
 
   @Get(':id')
