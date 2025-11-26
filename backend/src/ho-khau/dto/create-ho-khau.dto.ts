@@ -1,7 +1,6 @@
 import {
   IsNotEmpty,
   IsString,
-  IsDateString,
   IsArray,
   ValidateNested,
   IsOptional,
@@ -45,6 +44,9 @@ class ThanhVienDto {
   @IsMongoId({ message: 'nhanKhauId must be a valid MongoDB ObjectId' })
   nhanKhauId: string;
 
+  @IsNotEmpty({ message: 'Tên không được để trống' })
+  @IsString()
+  hoTen: string;
   @IsNotEmpty({ message: 'Quan hệ với chủ hộ không được để trống' })
   @IsString()
   quanHeVoiChuHo: string;
@@ -64,10 +66,6 @@ export class CreateHoKhauDto {
   @ValidateNested()
   @Type(() => DiaChiDto)
   diaChi: DiaChiDto;
-
-  @IsNotEmpty({ message: 'Ngày lập không được để trống' })
-  @IsDateString({}, { message: 'Ngày lập phải là định dạng ngày hợp lệ' })
-  ngayLap: Date;
 
   @IsOptional()
   @IsString()

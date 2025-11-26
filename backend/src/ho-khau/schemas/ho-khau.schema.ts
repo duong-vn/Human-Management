@@ -38,9 +38,6 @@ export class HoKhau {
     tinhThanh: string;
   };
 
-  @Prop({ required: true, type: Date })
-  ngayLap: Date;
-
   @Prop({ required: true, default: 'Hoạt động' })
   trangThai: string;
 
