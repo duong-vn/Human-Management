@@ -8,20 +8,41 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api');
+  app.enableCors();
 
   const configService = app.get(ConfigService);
-  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
 
   const config = new DocumentBuilder()
-    .setTitle('Cats example')
-    .setDescription('The cats API description')
+    .setTitle('Quản lý Tổ dân phố API')
+    .setDescription(
+      'API Backend cho hệ thống quản lý thông tin tổ dân phố 7 - Phường La Khê',
+    )
     .setVersion('1.0')
-    .addTag('cats')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        in: 'header',
+        name: 'Authorization',
+      },
+      'access-token',
+    )
+    .addTag('Auth', 'Xác thực người dùng')
+    .addTag('Nhân khẩu', 'Quản lý thông tin nhân khẩu')
+    .addTag('Hộ khẩu', 'Quản lý thông tin hộ khẩu')
+    .addTag('Tạm trú/Tạm vắng', 'Quản lý tạm trú tạm vắng')
+    .addTag('Khoản thu', 'Quản lý các khoản thu')
+    .addTag('Thu phí', 'Quản lý thu phí và đóng góp')
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, documentFactory);
+  SwaggerModule.setup('docs', app, documentFactory);
 
-  await app.listen(configService.get<string>('PORT') ?? 8000);
+  const port = configService.get<string>('PORT') ?? 8080;
+  await app.listen(port);
+  console.log(`Application is running on: http://localhost:${port}`);
+  console.log(`Swagger docs: http://localhost:${port}/docs`);
 }
 
 void bootstrap();

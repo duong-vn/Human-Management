@@ -5,12 +5,13 @@ import {
   ValidateNested,
   IsOptional,
   IsMongoId,
+  IsDateString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class ChuHoDto {
   @IsOptional()
-  @IsMongoId({ message: 'nhanKhauId must be a valid MongoDB ObjectId' })
+  @IsMongoId({ message: 'Cai nay phai la dang MongoDB' })
   nhanKhauId?: string;
 
   @IsNotEmpty({ message: 'Họ tên chủ hộ không được để trống' })
@@ -18,29 +19,32 @@ class ChuHoDto {
   hoTen: string;
 }
 
-class DiaChiDto {
-  @IsNotEmpty({ message: 'Số nhà không được để trống' })
-  @IsString()
-  soNha: string;
+export class DiaChi {
+  @IsOptional()
+  moiSinh: boolean;
 
-  @IsNotEmpty({ message: 'Đường không được để trống' })
+  @IsOptional()
   @IsString()
-  duong: string;
+  soNha?: string;
 
-  @IsNotEmpty({ message: 'Phường/Xã không được để trống' })
+  @IsOptional()
   @IsString()
-  phuongXa: string;
+  duong?: string;
 
-  @IsNotEmpty({ message: 'Quận/Huyện không được để trống' })
+  @IsOptional()
   @IsString()
-  quanHuyen: string;
+  phuongXa?: string;
 
-  @IsNotEmpty({ message: 'Tỉnh/Thành phố không được để trống' })
+  @IsOptional()
+  @IsString()
+  quanHuyen?: string;
+
+  @IsOptional()
   @IsString()
   tinhThanh: string;
 }
 
-class ThanhVienDto {
+export class ThanhVien {
   @IsMongoId({ message: 'nhanKhauId must be a valid MongoDB ObjectId' })
   nhanKhauId: string;
 
@@ -50,6 +54,16 @@ class ThanhVienDto {
   @IsNotEmpty({ message: 'Quan hệ với chủ hộ không được để trống' })
   @IsString()
   quanHeVoiChuHo: string;
+}
+
+export class GhiChu {
+  @IsOptional()
+  @IsString()
+  noiDung?: string;
+
+  @IsDateString({}, { message: 'Phải là 1 date string' })
+  @Type(() => Date)
+  capNhat: Date;
 }
 
 export class CreateHoKhauDto {
@@ -64,8 +78,8 @@ export class CreateHoKhauDto {
 
   @IsNotEmpty({ message: 'Địa chỉ không được để trống' })
   @ValidateNested()
-  @Type(() => DiaChiDto)
-  diaChi: DiaChiDto;
+  @Type(() => DiaChi)
+  diaChi: DiaChi;
 
   @IsOptional()
   @IsString()
@@ -74,6 +88,9 @@ export class CreateHoKhauDto {
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ThanhVienDto)
-  thanhVien?: ThanhVienDto[];
+  @Type(() => ThanhVien)
+  thanhVien?: ThanhVien[];
+
+  @IsOptional()
+  ghiChu?: string;
 }

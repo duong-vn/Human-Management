@@ -1,7 +1,14 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { DiaChi, ThanhVien } from '../dto/create-ho-khau.dto';
 
 export type HoKhauDocument = HoKhau & Document;
+
+export class LichSuThayDoiHoKhau {
+  noiDung: string;
+  ngayThayDoi: Date;
+  nguoiThucHien: string;
+}
 
 @Schema({ timestamps: true })
 export class HoKhau {
@@ -13,7 +20,6 @@ export class HoKhau {
       nhanKhauId: { type: Types.ObjectId, ref: 'NhanKhau' },
       hoTen: { type: String, required: true },
     },
-    required: true,
   })
   chuHo: {
     nhanKhauId: Types.ObjectId;
@@ -21,39 +27,33 @@ export class HoKhau {
   };
 
   @Prop({
-    type: {
-      soNha: String,
-      duong: String,
-      phuongXa: String,
-      quanHuyen: String,
-      tinhThanh: String,
-    },
+    type: DiaChi,
     required: true,
   })
-  diaChi: {
-    soNha: string;
-    duong: string;
-    phuongXa: string;
-    quanHuyen: string;
-    tinhThanh: string;
-  };
-
-  @Prop({ required: true, default: 'Hoạt động' })
-  trangThai: string;
+  diaChi: DiaChi;
 
   @Prop({
-    type: [
-      {
-        nhanKhauId: { type: Types.ObjectId, ref: 'NhanKhau' },
-        quanHeVoiChuHo: String,
-      },
-    ],
+    type: [ThanhVien],
     default: [],
   })
-  thanhVien: Array<{
-    nhanKhauId: Types.ObjectId;
-    quanHeVoiChuHo: string;
-  }>;
+  thanhVien: ThanhVien[];
+
+  @Prop({
+    type: String,
+    enum: ['Đang hoạt động', 'Đã tách hộ', 'Đã xóa'],
+    default: 'Đang hoạt động',
+  })
+  trangThai: string;
+
+  @Prop({ type: Date })
+  ngayLap: Date;
+
+  @Prop()
+  ghiChu: string;
+
+  // Lịch sử thay đổi hộ khẩu (thay đổi chủ hộ, tách hộ, ...)
+  @Prop({ type: [LichSuThayDoiHoKhau], default: [] })
+  lichSuThayDoi: LichSuThayDoiHoKhau[];
 }
 
 export const HoKhauSchema = SchemaFactory.createForClass(HoKhau);

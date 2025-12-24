@@ -1,15 +1,37 @@
-import { IsEmail, IsNotEmpty } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsEmail,
+  MinLength,
+  IsOptional,
+  IsEnum,
+} from 'class-validator';
+import { UserRole } from '../schemas/user.schema';
 
 export class CreateUserDto {
-  @IsNotEmpty({ message: 'Name should not be empty' })
-  name: string;
+  @IsNotEmpty({ message: 'Họ tên không được để trống' })
+  @IsString()
+  hoTen: string;
 
-  age: number;
+  @IsNotEmpty({ message: 'Username không được để trống' })
+  @IsString()
+  @MinLength(4, { message: 'Username phải có ít nhất 4 ký tự' })
+  username: string;
 
-  @IsNotEmpty({ message: 'Email should not be empty' })
-  @IsEmail()
+  @IsNotEmpty({ message: 'Email không được để trống' })
+  @IsEmail({}, { message: 'Email không hợp lệ' })
   email: string;
 
-  @IsNotEmpty({ message: 'Password should not be empty' })
+  @IsNotEmpty({ message: 'Mật khẩu không được để trống' })
+  @IsString()
+  @MinLength(6, { message: 'Mật khẩu phải có ít nhất 6 ký tự' })
   password: string;
+
+  @IsOptional()
+  @IsEnum(UserRole, { message: 'Role không hợp lệ' })
+  role?: UserRole;
+
+  @IsOptional()
+  @IsString()
+  soDienThoai?: string;
 }
