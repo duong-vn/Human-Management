@@ -13,11 +13,15 @@ import {
 export class NhanKhauService {
   constructor(
     @InjectModel(NhanKhau.name) private nhanKhauModel: Model<NhanKhauDocument>,
-  ) { }
+  ) {}
 
   // Thêm nhân khẩu mới
   async create(createNhanKhauDto: CreateNhanKhauDto): Promise<NhanKhau> {
-    const createdNhanKhau = new this.nhanKhauModel(createNhanKhauDto);
+    const { hoKhauId, ...rest } = createNhanKhauDto;
+    const createdNhanKhau = new this.nhanKhauModel({
+      ...rest,
+      hoKhauId: hoKhauId ? new Types.ObjectId(hoKhauId) : undefined,
+    });
     return createdNhanKhau.save();
   }
 

@@ -22,6 +22,7 @@ import {
   ApiOperation,
   ApiBearerAuth,
   ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 
 @ApiTags('Nhân khẩu')
@@ -29,10 +30,58 @@ import {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('nhan-khau')
 export class NhanKhauController {
-  constructor(private readonly nhanKhauService: NhanKhauService) { }
+  constructor(private readonly nhanKhauService: NhanKhauService) {}
 
   @Post()
   @ApiOperation({ summary: 'Thêm nhân khẩu mới' })
+  @ApiBody({
+    schema: {
+      example: {
+        hoTen: 'duong tuan nguyen',
+        biDanh: 'nguyen tuan duong',
+        ngaySinh: '2005-05-09T03:44:08.942Z',
+        noiSinh: 'Cao Bang',
+        queQuan: 'Bac Linh',
+        danToc: 'Tay',
+        ngheNghiep: 'Suc vat',
+        noiLamViec: 'Dai Hoc Back Khao',
+        soDinhDanh: {
+          loai: 'CMND',
+          so: '12312312313',
+          ngayCap: '2025-12-25T03:44:08.942Z',
+          noiCap: 'Binh Nguyen Vo tan',
+        },
+        gioiTinh: 'Nữ',
+        tonGiao: 'Không',
+        quocTich: 'Viet Nam',
+        diaChiHienTai: {
+          soNha: '12',
+          duong: 'nguyen duong',
+          phuongXa: 'Nhat ban',
+          quanHuyen: '2',
+          tinhThanh: 'Thanh Pho',
+        },
+        diaChiThuongTru: {
+          soNha: '12',
+          duong: 'nguyen duong',
+          phuongXa: 'Nhat ban',
+          quanHuyen: '2',
+          tinhThanh: 'Thanh Pho',
+        },
+        diaChiCu: {
+          soNha: '12',
+          duong: 'nguyen duong',
+          phuongXa: 'Nhat ban',
+          quanHuyen: '2',
+          tinhThanh: 'Thanh Pho',
+        },
+        hoKhauId: '691d9631baac1efb7579cf0c',
+        trangThai: 'Thường trú',
+        ngayDangKyThuongTru: '2025-12-25T03:44:08.943Z',
+        ghiChu: '',
+      },
+    },
+  })
   create(@Body() createNhanKhauDto: CreateNhanKhauDto) {
     return this.nhanKhauService.create(createNhanKhauDto);
   }
@@ -40,6 +89,17 @@ export class NhanKhauController {
   @Post('moi-sinh')
   @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO, UserRole.CAN_BO)
   @ApiOperation({ summary: 'Thêm nhân khẩu mới sinh' })
+  @ApiBody({
+    schema: {
+      example: {
+        hoTen: 'Nguyễn Tuan Duong',
+        ngaySinh: '2025-12-01T08:15:30.000Z',
+        gioiTinh: 'Nam',
+        hoKhauId: '691d9631baac1efb7579cf0c',
+        quanHeVoiChuHo: 'Con',
+      },
+    },
+  })
   themMoiSinh(
     @Body()
     data: {
@@ -60,6 +120,15 @@ export class NhanKhauController {
   @Patch(':id/chuyen-di')
   @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO, UserRole.CAN_BO)
   @ApiOperation({ summary: 'Đánh dấu nhân khẩu chuyển đi' })
+  @ApiBody({
+    schema: {
+      example: {
+        ngayChuyenDi: '2025-12-20T09:30:00.000Z',
+        noiChuyenDen: 'Quận 1, TP. Hồ Chí Minh',
+        lyDoChuyenDi: 'Chuyển công tác',
+      },
+    },
+  })
   chuyenDi(
     @Param('id') id: string,
     @Body()
@@ -79,6 +148,13 @@ export class NhanKhauController {
   @Patch(':id/qua-doi')
   @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO, UserRole.CAN_BO)
   @ApiOperation({ summary: 'Đánh dấu nhân khẩu qua đời' })
+  @ApiBody({
+    schema: {
+      example: {
+        ngayMat: '2025-12-18T22:10:00.000Z',
+      },
+    },
+  })
   quaDoi(
     @Param('id') id: string,
     @Body() data: { ngayMat: Date },
@@ -160,6 +236,16 @@ export class NhanKhauController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Cập nhật thông tin nhân khẩu' })
+  @ApiBody({
+    schema: {
+      example: {
+        ngheNghiep: 'Kỹ sư phần mềm',
+        noiLamViec: 'Đại học Bách Khoa',
+        trangThai: 'Thường trú',
+        ghiChu: 'Cập nhật thông tin nghề nghiệp',
+      },
+    },
+  })
   update(
     @Param('id') id: string,
     @Body() updateNhanKhauDto: UpdateNhanKhauDto,

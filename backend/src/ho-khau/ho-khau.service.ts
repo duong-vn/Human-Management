@@ -12,16 +12,34 @@ import {
   HoKhauDocument,
   LichSuThayDoiHoKhau,
 } from './schemas/ho-khau.schema';
+import {
+  NhanKhau,
+  NhanKhauDocument,
+} from '../nhan-khau/schemas/nhan-khau.schema';
 
 @Injectable()
 export class HoKhauService {
   constructor(
     @InjectModel(HoKhau.name) private hoKhauModel: Model<HoKhauDocument>,
-  ) { }
+    @InjectModel(NhanKhau.name)
+    private nhanKhauModel: Model<NhanKhauDocument>,
+  ) {}
 
   async create(createHoKhauDto: CreateHoKhauDto): Promise<HoKhau> {
+    const { thanhVien, chuHo } = createHoKhauDto;
+    const thanhVienWithObjectIds = thanhVien?.map((tv) => ({
+      ...tv,
+      nhanKhauId: new Types.ObjectId(tv.nhanKhauId),
+    }));
+    const chuHoObjectId = new Types.ObjectId(chuHo.nhanKhauId);
+
     const createdHoKhau = new this.hoKhauModel({
       ...createHoKhauDto,
+      chuHo: {
+        nhanKhauId: chuHoObjectId,
+        hoTen: chuHo.hoTen,
+      },
+      thanhVien: thanhVienWithObjectIds,
       ngayLap: new Date(),
     });
     return createdHoKhau.save();
@@ -36,10 +54,7 @@ export class HoKhauService {
       filter.trangThai = query.trangThai;
     }
     if (query?.search) {
-      filter.$or = [
-        { maHoKhau: { $regex: query.search, $options: 'i' } },
-        { 'chuHo.hoTen': { $regex: query.search, $options: 'i' } },
-      ];
+      filter.$or = [{ 'chuHo.hoTen': { $regex: query.search, $options: 'i' } }];
     }
     return this.hoKhauModel.find(filter).populate('chuHo.nhanKhauId').exec();
   }
@@ -50,7 +65,7 @@ export class HoKhauService {
 
   async findByMaHoKhau(maHoKhau: string): Promise<HoKhau | null> {
     return this.hoKhauModel
-      .findOne({ maHoKhau })
+      .findOne({ _id: maHoKhau })
       .populate('chuHo.nhanKhauId')
       .exec();
   }
@@ -96,7 +111,6 @@ export class HoKhauService {
   // Tách hộ
   async tachHo(data: {
     hoKhauGocId: string;
-    maHoKhauMoi: string;
     chuHoMoi: { nhanKhauId: string; hoTen: string };
     diaChi: any;
     danhSachNhanKhauId: string[]; // Danh sách nhân khẩu chuyển sang hộ mới
@@ -106,40 +120,53 @@ export class HoKhauService {
     if (!hoKhauGoc) {
       throw new NotFoundException('Không tìm thấy hộ khẩu gốc');
     }
-
+    const thanhVienGoc = hoKhauGoc.thanhVien.map((tv) =>
+      tv.nhanKhauId.toString(),
+    );
     // Kiểm tra mã hộ khẩu mới đã tồn tại chưa
-    const existingHoKhau = await this.hoKhauModel.findOne({
-      maHoKhau: data.maHoKhauMoi,
-    });
-    if (existingHoKhau) {
-      throw new BadRequestException('Mã hộ khẩu đã tồn tại');
+    const isHopLe = data.danhSachNhanKhauId.every((id) =>
+      thanhVienGoc.includes(id),
+    );
+    if (!isHopLe) {
+      throw new BadRequestException(
+        'Danh sách nhân khẩu không hợp lệ hoặc không thuộc hộ khẩu gốc',
+      );
     }
-
     // Tạo hộ khẩu mới
     const hoKhauMoi = new this.hoKhauModel({
-      maHoKhau: data.maHoKhauMoi,
       chuHo: {
         nhanKhauId: new Types.ObjectId(data.chuHoMoi.nhanKhauId),
         hoTen: data.chuHoMoi.hoTen,
       },
       diaChi: data.diaChi,
-      thanhVien: [],
+      thanhVien: data.danhSachNhanKhauId.map((id) => ({
+        nhanKhauId: new Types.ObjectId(id),
+      })),
       ngayLap: new Date(),
       trangThai: 'Đang hoạt động',
       lichSuThayDoi: [
         {
-          noiDung: `Tách hộ từ hộ khẩu ${hoKhauGoc.maHoKhau}`,
+          noiDung: `Tách hộ từ hộ khẩu ${data.hoKhauGocId}`,
           ngayThayDoi: new Date(),
           nguoiThucHien: data.nguoiThucHien,
         },
       ],
     });
 
-    await hoKhauMoi.save();
+    const savedHoKhauMoi = await hoKhauMoi.save();
+
+    const nhanKhauChuyenSangHoMoiIds = Array.from(
+      new Set([...(data.danhSachNhanKhauId || []), data.chuHoMoi.nhanKhauId]),
+    ).map((id) => new Types.ObjectId(id));
+
+    await this.nhanKhauModel.updateMany(
+      { _id: { $in: nhanKhauChuyenSangHoMoiIds } },
+      { $set: { hoKhauId: savedHoKhauMoi._id } },
+    );
 
     // Cập nhật lịch sử hộ khẩu gốc
     const lichSuGoc: LichSuThayDoiHoKhau = {
-      noiDung: `Tách hộ - Hộ khẩu mới: ${data.maHoKhauMoi}`,
+      noiDung: `Tách hộ sang hộ khẩu mới:  ${savedHoKhauMoi._id}`,
       ngayThayDoi: new Date(),
       nguoiThucHien: data.nguoiThucHien,
     };

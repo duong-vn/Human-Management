@@ -11,7 +11,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { HoKhauService } from './ho-khau.service';
-import { CreateHoKhauDto } from './dto/create-ho-khau.dto';
+import { CreateHoKhauDto, DiaChi } from './dto/create-ho-khau.dto';
 import { UpdateHoKhauDto } from './dto/update-ho-khau.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -22,10 +22,11 @@ import {
   ApiOperation,
   ApiBearerAuth,
   ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 
 @ApiTags('Hộ khẩu')
-@ApiBearerAuth()
+@ApiBearerAuth('access-token')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('ho-khau')
 export class HoKhauController {
@@ -33,6 +34,37 @@ export class HoKhauController {
 
   @Post()
   @ApiOperation({ summary: 'Tạo hộ khẩu mới' })
+  @ApiBody({
+    schema: {
+      example: {
+        chuHo: {
+          nhanKhauId: '694cb3d6ab52b519fd76b918',
+          hoTen: 'Dương Tuấn Nguyễn',
+        },
+        diaChi: {
+          soNha: '12',
+          duong: 'Nguyễn Du',
+          phuongXa: 'Phường Bến Nghé',
+          quanHuyen: 'Quận 1',
+          tinhThanh: 'TP. Hồ Chí Minh',
+        },
+        trangThai: 'Đang hoạt động',
+        thanhVien: [
+          {
+            nhanKhauId: '694cb9093eeb3ec342ef4d0e',
+            hoTen: 'vo cua Nguyễn Tuấn Dương',
+            quanHeVoiChuHo: 'Vo',
+          },
+          {
+            nhanKhauId: '694cbf831114476cbffaddd4',
+            hoTen: 'con cua Nguyễn Tuấn Dương',
+            quanHeVoiChuHo: 'Con',
+          },
+        ],
+        ghiChu: 'Tạo hộ khẩu mới tháng 12/2025',
+      },
+    },
+  })
   create(@Body() createHoKhauDto: CreateHoKhauDto) {
     return this.hoKhauService.create(createHoKhauDto);
   }
@@ -40,13 +72,34 @@ export class HoKhauController {
   @Post('tach-ho')
   @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO)
   @ApiOperation({ summary: 'Tách hộ từ hộ khẩu hiện có' })
+  @ApiBody({
+    schema: {
+      example: {
+        hoKhauGocId: '694d441431735a5a0eac845a',
+        chuHoMoi: {
+          nhanKhauId: '694cbf831114476cbffaddd4',
+          hoTen: 'con cau Nguyễn Tuan Duong',
+        },
+        diaChi: {
+          soNha: '88',
+          duong: 'Lý Tự Trọng',
+          phuongXa: 'Phường 7',
+          quanHuyen: 'Quận 3',
+          tinhThanh: 'TP. Hồ Chí Minh',
+        },
+        danhSachNhanKhauId: [
+          '694cb3d6ab52b519fd76b918',
+          '6926c6af840b406838006a28',
+        ],
+      },
+    },
+  })
   tachHo(
     @Body()
     data: {
       hoKhauGocId: string;
-      maHoKhauMoi: string;
       chuHoMoi: { nhanKhauId: string; hoTen: string };
-      diaChi: any;
+      diaChi: DiaChi;
       danhSachNhanKhauId: string[];
     },
     @Request() req,
@@ -72,12 +125,6 @@ export class HoKhauController {
   @ApiOperation({ summary: 'Thống kê hộ khẩu' })
   thongKe() {
     return this.hoKhauService.thongKe();
-  }
-
-  @Get('generate-ma')
-  @ApiOperation({ summary: 'Tạo mã hộ khẩu tự động' })
-  generateMa() {
-    return this.hoKhauService.generateMaHoKhau();
   }
 
   @Get('active')
@@ -106,6 +153,21 @@ export class HoKhauController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Cập nhật thông tin hộ khẩu' })
+  @ApiBody({
+    schema: {
+      example: {
+        diaChi: {
+          soNha: '15',
+          duong: 'Nguyễn Trãi',
+          phuongXa: 'Phường 1',
+          quanHuyen: 'Quận 5',
+          tinhThanh: 'TP. Hồ Chí Minh',
+        },
+        trangThai: 'Đang hoạt động',
+        ghiChu: 'Cập nhật địa chỉ hộ khẩu',
+      },
+    },
+  })
   update(
     @Param('id') id: string,
     @Body() updateHoKhauDto: UpdateHoKhauDto,
@@ -117,6 +179,15 @@ export class HoKhauController {
   @Patch(':id/thay-doi-chu-ho')
   @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO)
   @ApiOperation({ summary: 'Thay đổi chủ hộ' })
+  @ApiBody({
+    schema: {
+      example: {
+        chuHoMoiId: '691d9631baac1efb7579cf11',
+        hoTenChuHoMoi: 'Nguyễn Tuấn Dương',
+        lyDo: 'Chủ hộ cũ chuyển đi',
+      },
+    },
+  })
   thayDoiChuHo(
     @Param('id') id: string,
     @Body()
@@ -135,6 +206,15 @@ export class HoKhauController {
 
   @Patch(':id/them-thanh-vien')
   @ApiOperation({ summary: 'Thêm thành viên vào hộ khẩu' })
+  @ApiBody({
+    schema: {
+      example: {
+        nhanKhauId: '691d9631baac1efb7579cf13',
+        hoTen: 'Trần Minh Anh',
+        quanHeVoiChuHo: 'Vợ',
+      },
+    },
+  })
   themThanhVien(
     @Param('id') id: string,
     @Body() data: { nhanKhauId: string; hoTen: string; quanHeVoiChuHo: string },

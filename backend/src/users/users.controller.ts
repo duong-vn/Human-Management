@@ -18,7 +18,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private config: ConfigService,
-  ) { }
+  ) {}
 
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
@@ -27,8 +27,7 @@ export class UsersController {
 
   @Get()
   findAll() {
-    // return this.usersService.findAll();
-    return 'lon';
+    return this.usersService.findAll();
   }
 
   @Get(':id')

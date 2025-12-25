@@ -15,7 +15,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
@@ -24,16 +24,16 @@ export class AuthController {
     schema: {
       type: 'object',
       properties: {
-        email: {
+        username: {
           type: 'string',
-          example: 'test@gmail.com',
+          example: 'duong@gmail.com',
         },
         password: {
           type: 'string',
-          example: '123456',
+          example: '123123',
         },
       },
-      required: ['email', 'password'],
+      required: ['username', 'password'],
     },
   })
   async login(@Request() req) {

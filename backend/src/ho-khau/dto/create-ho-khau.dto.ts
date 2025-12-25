@@ -9,7 +9,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-class ChuHoDto {
+export class ChuHoDto {
   @IsOptional()
   @IsMongoId({ message: 'Cai nay phai la dang MongoDB' })
   nhanKhauId?: string;
@@ -20,9 +20,6 @@ class ChuHoDto {
 }
 
 export class DiaChi {
-  @IsOptional()
-  moiSinh: boolean;
-
   @IsOptional()
   @IsString()
   soNha?: string;
@@ -67,10 +64,6 @@ export class GhiChu {
 }
 
 export class CreateHoKhauDto {
-  @IsNotEmpty({ message: 'Mã hộ khẩu không được để trống' })
-  @IsString()
-  maHoKhau: string;
-
   @IsNotEmpty({ message: 'Thông tin chủ hộ không được để trống' })
   @ValidateNested()
   @Type(() => ChuHoDto)
