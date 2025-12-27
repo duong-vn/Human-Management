@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { getAT, getUser, User } from "@/lib/AuthToken";
-import { get } from "http";
+import api from "@/lib/axios";
 import { toast } from "sonner";
 
 export default function Navbar() {
@@ -15,6 +15,17 @@ export default function Navbar() {
     setUser(getUser());
   }, [getAT()]);
   if (isAuthPage) return null;
+
+  const handleLogout = async () => {
+    // Clear token and user info
+    setUser(null);
+    const res = await api.post("/auth/logout");
+    if (res.status === 201) {
+      toast.success("Đăng xuất thành công!");
+    } else {
+      toast.error("Đăng xuất thất bại!");
+    }
+  };
 
   return (
     <nav className="bg-stone-800 text-stone-100 shadow-md fixed top-0 left-0 right-0 z-50 border-b border-stone-700">
@@ -43,7 +54,7 @@ export default function Navbar() {
                 <span className="text-sm text-stone-300">{user.username}</span>
               </div>
               <button
-                onClick={() => setUser(null)}
+                onClick={handleLogout}
                 className="px-4 py-2 text-sm text-stone-400 hover:text-white hover:bg-stone-700 rounded-lg transition"
               >
                 Đăng xuất
