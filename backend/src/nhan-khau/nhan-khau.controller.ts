@@ -27,7 +27,7 @@ import {
 
 @ApiTags('Nhân khẩu')
 @ApiBearerAuth('access-token')
-@UseGuards(JwtAuthGuard, RolesGuard)
+// @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('nhan-khau')
 export class NhanKhauController {
   constructor(private readonly nhanKhauService: NhanKhauService) {}
