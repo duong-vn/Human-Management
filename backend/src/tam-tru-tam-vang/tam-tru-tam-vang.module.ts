@@ -6,11 +6,18 @@ import {
   TamTruTamVang,
   TamTruTamVangSchema,
 } from './schemas/tam-tru-tam-vang.schema';
+import {
+  NhanKhau,
+  NhanKhauSchema,
+} from 'src/nhan-khau/schemas/nhan-khau.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: TamTruTamVang.name, schema: TamTruTamVangSchema },
+    ]),
+    MongooseModule.forFeature([
+      { name: NhanKhau.name, schema: NhanKhauSchema },
     ]),
   ],
   controllers: [TamTruTamVangController],

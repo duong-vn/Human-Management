@@ -21,6 +21,7 @@ import {
   ApiOperation,
   ApiBearerAuth,
   ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 
 @ApiTags('Khoản thu')
@@ -33,6 +34,67 @@ export class KhoanThuController {
   @Post()
   @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO, UserRole.KE_TOAN)
   @ApiOperation({ summary: 'Tạo khoản thu mới' })
+  @ApiBody({
+    description: 'Thông tin khoản thu mới',
+    examples: {
+      phiBatBuocTheoNhanKhau: {
+        summary: 'Phí bắt buộc theo nhân khẩu',
+        description: 'Ví dụ: Phí vệ sinh 6000đ/người/tháng',
+        value: {
+          tenKhoanThu: 'Phí vệ sinh',
+          loaiKhoanThu: 'Bắt buộc',
+          moTa: 'Phí vệ sinh môi trường hàng tháng',
+          soTien: 6000,
+          donViTinh: 'VNĐ/người/tháng',
+          ngayBatDau: '2025-01-01',
+          isActive: true,
+          ghiChu: 'Thu theo số nhân khẩu trong hộ',
+        },
+      },
+      phiBatBuocTheoDienTich: {
+        summary: 'Phí bắt buộc theo diện tích',
+        description: 'Ví dụ: Phí dịch vụ chung cư',
+        value: {
+          tenKhoanThu: 'Phí dịch vụ chung cư',
+          loaiKhoanThu: 'Bắt buộc',
+          moTa: 'Phí dịch vụ quản lý chung cư hàng tháng',
+          soTien: 6000,
+          donViTinh: 'VNĐ/m2/tháng',
+          ngayBatDau: '2025-01-01',
+          isActive: true,
+          ghiChu: 'Thu theo diện tích căn hộ',
+        },
+      },
+      dongGopTuNguyen: {
+        summary: 'Đóng góp tự nguyện',
+        description: 'Ví dụ: Quỹ khuyến học',
+        value: {
+          tenKhoanThu: 'Quỹ khuyến học',
+          loaiKhoanThu: 'Tự nguyện',
+          moTa: 'Đóng góp quỹ khuyến học năm 2025',
+          ngayBatDau: '2025-01-01',
+          ngayKetThuc: '2025-12-31',
+          isActive: true,
+          tenDotThu: 'Quỹ khuyến học năm học 2024-2025',
+          ghiChu: 'Tự nguyện đóng góp, không bắt buộc',
+        },
+      },
+      dotDongGopDacBiet: {
+        summary: 'Đợt đóng góp đặc biệt',
+        description: 'Ví dụ: Ủng hộ đồng bào lũ lụt',
+        value: {
+          tenKhoanThu: 'Ủng hộ đồng bào lũ lụt',
+          loaiKhoanThu: 'Tự nguyện',
+          moTa: 'Quyên góp ủng hộ đồng bào miền Trung',
+          ngayBatDau: '2025-01-15',
+          ngayKetThuc: '2025-02-15',
+          isActive: true,
+          tenDotThu: 'Đợt quyên góp tháng 1/2025',
+          ghiChu: 'Đóng góp tùy tâm',
+        },
+      },
+    },
+  })
   create(@Body() createKhoanThuDto: CreateKhoanThuDto) {
     return this.khoanThuService.create(createKhoanThuDto);
   }
@@ -82,6 +144,34 @@ export class KhoanThuController {
   @Patch(':id')
   @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO, UserRole.KE_TOAN)
   @ApiOperation({ summary: 'Cập nhật khoản thu' })
+  @ApiBody({
+    description: 'Thông tin cập nhật khoản thu',
+    examples: {
+      capNhatSoTien: {
+        summary: 'Cập nhật số tiền',
+        value: {
+          soTien: 7000,
+          ghiChu: 'Điều chỉnh tăng từ 6000đ lên 7000đ',
+        },
+      },
+      ketThucKhoanThu: {
+        summary: 'Kết thúc khoản thu',
+        value: {
+          ngayKetThuc: '2025-12-31',
+          isActive: false,
+          ghiChu: 'Đã kết thúc đợt thu',
+        },
+      },
+      kichHoatLai: {
+        summary: 'Kích hoạt lại khoản thu',
+        value: {
+          isActive: true,
+          ngayKetThuc: '2026-12-31',
+          ghiChu: 'Gia hạn thêm 1 năm',
+        },
+      },
+    },
+  })
   update(
     @Param('id') id: string,
     @Body() updateKhoanThuDto: UpdateKhoanThuDto,

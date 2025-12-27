@@ -1,14 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { getAT, getUser, User } from "@/lib/AuthToken";
+import { get } from "http";
+import { toast } from "sonner";
 
 export default function Navbar() {
   const pathname = usePathname();
   const isAuthPage = pathname?.startsWith("/auth");
-  const [user, setUser] = useState<{ name: string } | null>(null);
-
+  const [user, setUser] = useState<User>(getUser());
+  useEffect(() => {
+    setUser(getUser());
+  }, [getAT()]);
   if (isAuthPage) return null;
 
   return (
@@ -33,9 +38,9 @@ export default function Navbar() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-stone-600 rounded-full flex items-center justify-center text-sm font-medium">
-                  {user.name.charAt(0).toUpperCase()}
+                  {user.username.charAt(0).toUpperCase()}
                 </div>
-                <span className="text-sm text-stone-300">{user.name}</span>
+                <span className="text-sm text-stone-300">{user.username}</span>
               </div>
               <button
                 onClick={() => setUser(null)}

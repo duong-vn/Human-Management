@@ -1,6 +1,8 @@
 "use client";
 
+import { getUser } from "@/lib/AuthToken";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function Home() {
   const stats = [

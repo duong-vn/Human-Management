@@ -22,10 +22,11 @@ import {
   ApiOperation,
   ApiBearerAuth,
   ApiQuery,
+  ApiBody,
 } from '@nestjs/swagger';
 
 @ApiTags('Tạm trú/Tạm vắng')
-@ApiBearerAuth()
+@ApiBearerAuth('access-token')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('tam-tru-tam-vang')
 export class TamTruTamVangController {
@@ -34,6 +35,41 @@ export class TamTruTamVangController {
   @Post()
   @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO)
   @ApiOperation({ summary: 'Tạo giấy tạm trú/tạm vắng mới' })
+  @ApiBody({
+    description: 'Thông tin đăng ký tạm trú/tạm vắng',
+    examples: {
+      tamTru: {
+        summary: 'Đăng ký tạm trú',
+        description: 'Ví dụ đăng ký tạm trú cho nhân khẩu',
+        value: {
+          nhanKhauId: '6766a1234567890123456789',
+          hoTen: 'Nguyễn Văn A',
+          loai: 'Tạm trú',
+          tuNgay: '2025-01-01',
+          denNgay: '2025-06-30',
+          diaChiTamTru: '123 Lê Lợi, Phường Bến Nghé, Quận 1, TP.HCM',
+          diaChiThuongTru: '456 Trần Hưng Đạo, Phường 1, Quận 5, TP.HCM',
+          lyDo: 'Đi làm việc',
+          ghiChu: 'Đăng ký tạm trú 6 tháng',
+        },
+      },
+      tamVang: {
+        summary: 'Đăng ký tạm vắng',
+        description: 'Ví dụ đăng ký tạm vắng cho nhân khẩu',
+        value: {
+          nhanKhauId: '6766a1234567890123456789',
+          hoTen: 'Trần Thị B',
+          loai: 'Tạm vắng',
+          tuNgay: '2025-01-15',
+          denNgay: '2025-03-15',
+          diaChiThuongTru: '789 Nguyễn Huệ, Phường 1, Quận 1, TP.HCM',
+          noiDen: 'Hà Nội',
+          lyDo: 'Đi công tác',
+          ghiChu: 'Công tác 2 tháng',
+        },
+      },
+    },
+  })
   create(@Body() createDto: CreateTamTruTamVangDto, @Request() req) {
     return this.tamTruTamVangService.create(createDto, req.user.userId);
   }
@@ -83,6 +119,32 @@ export class TamTruTamVangController {
   @Patch(':id')
   @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO)
   @ApiOperation({ summary: 'Cập nhật giấy tạm trú/tạm vắng' })
+  @ApiBody({
+    description: 'Thông tin cập nhật tạm trú/tạm vắng',
+    examples: {
+      giaHan: {
+        summary: 'Gia hạn thời gian',
+        value: {
+          denNgay: '2025-08-30',
+          ghiChu: 'Gia hạn thêm 2 tháng',
+        },
+      },
+      capNhatTrangThai: {
+        summary: 'Cập nhật trạng thái',
+        value: {
+          trangThai: 'Hết hạn',
+          ghiChu: 'Đã hết thời hạn tạm trú',
+        },
+      },
+      huyDangKy: {
+        summary: 'Hủy đăng ký',
+        value: {
+          trangThai: 'Đã hủy',
+          ghiChu: 'Hủy theo yêu cầu của nhân khẩu',
+        },
+      },
+    },
+  })
   update(@Param('id') id: string, @Body() updateDto: UpdateTamTruTamVangDto) {
     return this.tamTruTamVangService.update(id, updateDto);
   }

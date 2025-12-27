@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreateTamTruTamVangDto } from './dto/create-tam-tru-tam-vang.dto';
@@ -7,18 +7,31 @@ import {
   TamTruTamVang,
   TamTruTamVangDocument,
 } from './schemas/tam-tru-tam-vang.schema';
+import {
+  NhanKhau,
+  NhanKhauDocument,
+} from 'src/nhan-khau/schemas/nhan-khau.schema';
 
 @Injectable()
 export class TamTruTamVangService {
   constructor(
     @InjectModel(TamTruTamVang.name)
     private tamTruTamVangModel: Model<TamTruTamVangDocument>,
+    @InjectModel(NhanKhau.name)
+    private nhanKhauModel: Model<NhanKhauDocument>,
   ) {}
 
   async create(
     createDto: CreateTamTruTamVangDto,
     nguoiDuyetId?: string,
   ): Promise<TamTruTamVang> {
+    const checkNhanKhau = await this.nhanKhauModel.findById(
+      createDto.nhanKhauId,
+    );
+    if (!checkNhanKhau) {
+      throw new BadRequestException('Không tồn tại nhân khẩu');
+    }
+
     const created = new this.tamTruTamVangModel({
       ...createDto,
       nguoiDuyet: nguoiDuyetId,

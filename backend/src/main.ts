@@ -3,12 +3,12 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api');
-  app.enableCors();
 
   const configService = app.get(ConfigService);
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
@@ -39,6 +39,13 @@ async function bootstrap() {
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, documentFactory);
 
+  app.use(cookieParser());
+  app.enableCors({
+    origin: true,
+    methods: 'GET, HEAD, PUT, PATCH, POST, DELETE',
+    preflightContinue: false,
+    credentials: true,
+  });
   const port = configService.get<string>('PORT') ?? 8080;
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}`);
