@@ -23,7 +23,7 @@ export class HoKhauService {
     @InjectModel(HoKhau.name) private hoKhauModel: Model<HoKhauDocument>,
     @InjectModel(NhanKhau.name)
     private nhanKhauModel: Model<NhanKhauDocument>,
-  ) {}
+  ) { }
 
   async create(createHoKhauDto: CreateHoKhauDto): Promise<HoKhau> {
     const { thanhVien, chuHo } = createHoKhauDto;
