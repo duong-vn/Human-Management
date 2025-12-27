@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Quản Lý Nhân Khẩu",
-  description: "Hệ thống quản lý hộ khẩu và nhân khẩu",
+  title: "BlueMoon | Quản Lý Chung Cư",
+  description:
+    "Hệ thống quản lý hộ khẩu, nhân khẩu và thu phí chung cư BlueMoon",
 };
 
 export default function RootLayout({
