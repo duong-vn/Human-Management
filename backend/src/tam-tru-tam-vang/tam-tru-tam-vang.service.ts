@@ -25,11 +25,13 @@ export class TamTruTamVangService {
     createDto: CreateTamTruTamVangDto,
     nguoiDuyetId?: string,
   ): Promise<TamTruTamVang> {
-    const checkNhanKhau = await this.nhanKhauModel.findById(
-      createDto.nhanKhauId,
-    );
-    if (!checkNhanKhau) {
-      throw new BadRequestException('Không tồn tại nhân khẩu');
+    if (createDto.nhanKhauId !== undefined) {
+      const checkNhanKhau = await this.nhanKhauModel.findById(
+        createDto.nhanKhauId,
+      );
+      if (!checkNhanKhau) {
+        throw new BadRequestException('Không tồn tại nhân khẩu');
+      }
     }
 
     const created = new this.tamTruTamVangModel({

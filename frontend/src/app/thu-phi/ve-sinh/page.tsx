@@ -2,7 +2,12 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 // 👇 1. Import thêm getAllThuPhi
-import { getAllHoKhau, createPhieuThu, getAllKhoanThu, getAllThuPhi } from "../api";
+import {
+  getAllHoKhau,
+  createPhieuThu,
+  getAllKhoanThu,
+  getAllThuPhi,
+} from "../api";
 import { User, CheckCircle, DollarSign, Calendar } from "lucide-react";
 import { toast } from "sonner";
 
@@ -49,8 +54,11 @@ export default function QuanLyPhiVeSinh() {
       queryClient.invalidateQueries({ queryKey: ["thu-phi-history"] });
     },
     onError: (err: any) => {
-      const msg = err?.response?.data?.message || err.message || "Có lỗi xảy ra";
-      toast.error("Lỗi thu phí: " + (Array.isArray(msg) ? msg.join(", ") : msg));
+      const msg =
+        err?.response?.data?.message || err.message || "Có lỗi xảy ra";
+      toast.error(
+        "Lỗi thu phí: " + (Array.isArray(msg) ? msg.join(", ") : msg)
+      );
     },
   });
 
@@ -60,30 +68,37 @@ export default function QuanLyPhiVeSinh() {
     const kyThuCanTim = `Tháng ${selectedMonth}/${selectedYear}`;
 
     return dsPhieuThu.some((pt: any) => {
-        // So sánh ID hộ khẩu (xử lý cả trường hợp _id và id)
-        const ptHoKhauId = pt.hoKhauId?._id || pt.hoKhauId?.id || pt.hoKhauId;
-        const targetId = hoKhauId;
+      // So sánh ID hộ khẩu (xử lý cả trường hợp _id và id)
+      const ptHoKhauId = pt.hoKhauId?._id || pt.hoKhauId?.id || pt.hoKhauId;
+      const targetId = hoKhauId;
 
-        // Điều kiện 1: Khớp hộ khẩu
-        const isMatchHoKhau = ptHoKhauId === targetId;
-        // Điều kiện 2: Khớp kỳ thu (Tháng này)
-        const isMatchKyThu = pt.kyThu === kyThuCanTim;
-        // Điều kiện 3: Có chứa khoản thu "Vệ sinh" (để tránh nhầm với quỹ đóng góp khác)
-        const isVeSinh = pt.chiTietThu?.some((ct:any) => ct.tenKhoanThu?.toLowerCase().includes("vệ sinh"));
+      // Điều kiện 1: Khớp hộ khẩu
+      const isMatchHoKhau = ptHoKhauId === targetId;
+      // Điều kiện 2: Khớp kỳ thu (Tháng này)
+      const isMatchKyThu = pt.kyThu === kyThuCanTim;
+      // Điều kiện 3: Có chứa khoản thu "Vệ sinh" (để tránh nhầm với quỹ đóng góp khác)
+      const isVeSinh = pt.chiTietThu?.some((ct: any) =>
+        ct.tenKhoanThu?.toLowerCase().includes("vệ sinh")
+      );
 
-        return isMatchHoKhau && isMatchKyThu && isVeSinh && pt.trangThai === "Đã thu";
+      return (
+        isMatchHoKhau && isMatchKyThu && isVeSinh && pt.trangThai === "Đã thu"
+      );
     });
   };
 
   // --- HÀM XỬ LÝ THU NHANH ---
   const handleThuNhanh = (hoKhau: any) => {
     // 1. Tìm ID khoản thu thật
-    const khoanThuVeSinh = dsKhoanThu.find((kt: any) =>
+    const khoanThuVeSinh = dsKhoanThu.find(
+      (kt: any) =>
         kt.tenKhoanThu && kt.tenKhoanThu.toLowerCase().includes("vệ sinh")
     );
 
     if (!khoanThuVeSinh) {
-        return toast.error("Cảnh báo: Không tìm thấy khoản thu 'Phí vệ sinh' trong hệ thống!");
+      return toast.error(
+        "Cảnh báo: Không tìm thấy khoản thu 'Phí vệ sinh' trong hệ thống!"
+      );
     }
     const realId = khoanThuVeSinh._id || khoanThuVeSinh.id;
 
@@ -121,9 +136,19 @@ export default function QuanLyPhiVeSinh() {
       tongTien: Number(tongTien),
     };
 
-    if (confirm(`Xác nhận thu ${tongTien.toLocaleString()}đ của hộ ${hoKhau.chuHo?.hoTen}?`)) {
-      thuPhiMutation.mutate(payload);
-    }
+    // 👇 THAY THẾ CONFIRM BẰNG TOAST TẠI ĐÂY
+    toast(`Thu phí: ${hoKhau.chuHo?.hoTen || "Không rõ"}`, {
+      description: `Xác nhận thu ${tongTien.toLocaleString()}đ?`,
+      action: {
+        label: "Xác nhận",
+        onClick: () => thuPhiMutation.mutate(payload),
+      },
+      cancel: {
+        label: "Hủy",
+        onClick: () => {}, // Hàm rỗng để tránh lỗi TypeScript
+      },
+      duration: 5000, // Hiện trong 5s
+    });
   };
 
   return (
@@ -135,7 +160,8 @@ export default function QuanLyPhiVeSinh() {
             <User className="text-green-600" /> Khoản Phí Vệ Sinh
           </h1>
           <p className="text-gray-500 text-sm mt-1">
-            Thu phí bắt buộc theo đầu người ({DON_GIA_VE_SINH.toLocaleString()} đ/người)
+            Thu phí bắt buộc theo đầu người ({DON_GIA_VE_SINH.toLocaleString()}{" "}
+            đ/người)
           </p>
         </div>
 
@@ -148,7 +174,9 @@ export default function QuanLyPhiVeSinh() {
             className="outline-none font-medium text-gray-700 bg-transparent"
           >
             {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-              <option key={m} value={m}>Tháng {m}</option>
+              <option key={m} value={m}>
+                Tháng {m}
+              </option>
             ))}
           </select>
           <span className="text-gray-300">|</span>
@@ -168,16 +196,30 @@ export default function QuanLyPhiVeSinh() {
         <table className="w-full text-left border-collapse">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
-              <th className="p-4 text-xs font-semibold text-gray-500 uppercase">Mã Hộ</th>
-              <th className="p-4 text-xs font-semibold text-gray-500 uppercase">Chủ Hộ</th>
-              <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-center">Số NK</th>
-              <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-right">Phải Thu</th>
-              <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-center">Hành Động</th>
+              <th className="p-4 text-xs font-semibold text-gray-500 uppercase">
+                Mã Hộ
+              </th>
+              <th className="p-4 text-xs font-semibold text-gray-500 uppercase">
+                Chủ Hộ
+              </th>
+              <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-center">
+                Số NK
+              </th>
+              <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-right">
+                Phải Thu
+              </th>
+              <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-center">
+                Hành Động
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {isLoadingHoKhau ? (
-              <tr><td colSpan={5} className="p-4 text-center">Đang tải...</td></tr>
+              <tr>
+                <td colSpan={5} className="p-4 text-center">
+                  Đang tải...
+                </td>
+              </tr>
             ) : (
               dsHoKhau.map((hk: any) => {
                 const hkId = hk._id || hk.id;
@@ -188,10 +230,19 @@ export default function QuanLyPhiVeSinh() {
                 const daDongTien = checkDaDong(hkId);
 
                 return (
-                  <tr key={hkId} className={`transition-colors ${daDongTien ? "bg-green-50/50" : "hover:bg-gray-50"}`}>
-                    <td className="p-4 font-medium text-blue-600">{hk.maHoKhau}</td>
+                  <tr
+                    key={hkId}
+                    className={`transition-colors ${
+                      daDongTien ? "bg-green-50/50" : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <td className="p-4 font-medium text-blue-600">
+                      #{hk._id.slice(-8).toUpperCase()}
+                    </td>
                     <td className="p-4">
-                      <div className="font-medium text-gray-800">{hk.chuHo?.hoTen || "Trống"}</div>
+                      <div className="font-medium text-gray-800">
+                        {hk.chuHo?.hoTen || "Trống"}
+                      </div>
                       <div className="text-xs text-gray-400 truncate max-w-[200px]">
                         {hk.diaChi?.soNha} {hk.diaChi?.duong}
                       </div>
@@ -205,22 +256,20 @@ export default function QuanLyPhiVeSinh() {
                       {phaiThu.toLocaleString()} ₫
                     </td>
                     <td className="p-4 text-center">
-
                       {/* 👇 LOGIC HIỂN THỊ NÚT BẤM DỰA TRÊN TRẠNG THÁI */}
                       {daDongTien ? (
-                          <div className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-bold shadow-sm">
-                              <CheckCircle size={16} /> Đã thu
-                          </div>
+                        <div className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-bold shadow-sm">
+                          <CheckCircle size={16} /> Đã thu
+                        </div>
                       ) : (
-                          <button
-                            onClick={() => handleThuNhanh(hk)}
-                            disabled={thuPhiMutation.isPending}
-                            className="group flex items-center gap-2 mx-auto px-3 py-1.5 bg-white border border-green-600 text-green-600 hover:bg-green-600 hover:text-white rounded-lg text-sm font-medium transition-all shadow-sm"
-                          >
-                            <DollarSign size={16} /> Thu Nhanh
-                          </button>
+                        <button
+                          onClick={() => handleThuNhanh(hk)}
+                          disabled={thuPhiMutation.isPending}
+                          className="group flex items-center gap-2 mx-auto px-3 py-1.5 bg-white border border-green-600 text-green-600 hover:bg-green-600 hover:text-white rounded-lg text-sm font-medium transition-all shadow-sm"
+                        >
+                          <DollarSign size={16} /> Thu Nhanh
+                        </button>
                       )}
-
                     </td>
                   </tr>
                 );

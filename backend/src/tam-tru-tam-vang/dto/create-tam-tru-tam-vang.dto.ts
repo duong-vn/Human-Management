@@ -6,13 +6,16 @@ import {
   IsOptional,
   IsMongoId,
   IsIn,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { DiaChi } from 'src/ho-khau/dto/create-ho-khau.dto';
 
 export class CreateTamTruTamVangDto {
   @ApiProperty({ description: 'ID nhân khẩu' })
-  @IsNotEmpty({ message: 'nhanKhauId không được để trống' })
+  @IsOptional()
   @IsMongoId({ message: 'nhanKhauId phải là MongoDB ObjectId hợp lệ' })
-  nhanKhauId: string;
+  nhanKhauId?: string;
 
   @ApiProperty({ description: 'Họ tên người đăng ký' })
   @IsNotEmpty({ message: 'Họ tên không được để trống' })
@@ -36,15 +39,35 @@ export class CreateTamTruTamVangDto {
   @IsDateString()
   denNgay: Date;
 
-  @ApiPropertyOptional({ description: 'Địa chỉ tạm trú (nếu là tạm trú)' })
+  @ApiPropertyOptional({
+    description: 'Địa chỉ tạm trú (nếu là tạm trú)',
+    example: {
+      soNha: '123',
+      duong: 'Lê Lợi',
+      phuongXa: 'Phường Bến Nghé',
+      quanHuyen: 'Quận 1',
+      tinhThanh: 'TP.HCM',
+    },
+  })
   @IsOptional()
-  @IsString()
-  diaChiTamTru?: string;
+  @ValidateNested()
+  @Type(() => DiaChi)
+  diaChiTamTru?: DiaChi;
 
-  @ApiPropertyOptional({ description: 'Địa chỉ thường trú gốc' })
+  @ApiPropertyOptional({
+    description: 'Địa chỉ thường trú gốc',
+    example: {
+      soNha: '456',
+      duong: 'Trần Hưng Đạo',
+      phuongXa: 'Phường 1',
+      quanHuyen: 'Quận 5',
+      tinhThanh: 'TP.HCM',
+    },
+  })
   @IsOptional()
-  @IsString()
-  diaChiThuongTru?: string;
+  @ValidateNested()
+  @Type(() => DiaChi)
+  diaChiThuongTru?: DiaChi;
 
   @ApiPropertyOptional({ description: 'Lý do tạm trú/tạm vắng' })
   @IsOptional()

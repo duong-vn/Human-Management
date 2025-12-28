@@ -1,4 +1,3 @@
-// src/components/NhanKhauModal.tsx
 "use client";
 import React, { useState, useEffect } from "react";
 import { NhanKhau } from "@/app/nhan-khau/types";
@@ -7,11 +6,11 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: any) => void;
-  initialData?: NhanKhau | null; // Dữ liệu để sửa (nếu có)
+  initialData?: NhanKhau | null;
   isLoading: boolean;
 }
 
-// Giá trị mặc định (Rỗng)
+// 1. Dữ liệu mặc định (hoKhauId để rỗng ban đầu)
 const defaultData = {
   hoTen: "",
   biDanh: "",
@@ -19,7 +18,7 @@ const defaultData = {
   ngaySinh: "",
   gioiTinh: "Nam",
   soDinhDanh: { loai: "CCCD", so: "", ngayCap: "", noiCap: "" },
-  hoKhauId: "691d9631baac1efb7579cf0c",
+  hoKhauId: "", // 👈 Trường này sẽ là optional
   trangThai: "Thường trú",
   quocTich: "Việt Nam",
   tonGiao: "Không",
@@ -28,20 +27,9 @@ const defaultData = {
   noiSinh: "",
   ngheNghiep: "",
   noiLamViec: "",
-  diaChiThuongTru: {
-    soNha: "",
-    duong: "",
-    phuongXa: "",
-    quanHuyen: "",
-    tinhThanh: "",
-  },
-  diaChiHienTai: {
-    soNha: "",
-    duong: "",
-    phuongXa: "",
-    quanHuyen: "",
-    tinhThanh: "",
-  },
+  ghiChu: "",
+  diaChiThuongTru: { soNha: "", duong: "", phuongXa: "", quanHuyen: "", tinhThanh: "" },
+  diaChiHienTai: { soNha: "", duong: "", phuongXa: "", quanHuyen: "", tinhThanh: "" },
 };
 
 export default function NhanKhauModal({
@@ -52,28 +40,40 @@ export default function NhanKhauModal({
   isLoading,
 }: Props) {
   const [formData, setFormData] = useState<any>(defaultData);
-  const [errors, setErrors] = useState<any>({});
 
-  // MỖI KHI MỞ MODAL: Kiểm tra xem là Thêm hay Sửa
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
-        // Chế độ Sửa: Đổ dữ liệu cũ vào form
-        // Lưu ý: Cần cắt chuỗi ngày tháng (YYYY-MM-DDTHH:mm...) thành (YYYY-MM-DD) để input date hiểu
+        // --- CHẾ ĐỘ SỬA ---
+
+        // Xử lý hoKhauId: Nếu backend trả về object (do populate) thì lấy _id, nếu không thì lấy chính nó
+        let currentHoKhauId = "";
+        if (initialData.hoKhauId) {
+            currentHoKhauId = typeof initialData.hoKhauId === 'object'
+                ? (initialData.hoKhauId as any)._id
+                : initialData.hoKhauId;
+        }
+
         setFormData({
+          ...defaultData,
           ...initialData,
-          ngaySinh: initialData.ngaySinh
-            ? initialData.ngaySinh.split("T")[0]
-            : "",
+          hoKhauId: currentHoKhauId, // Gán ID đã xử lý vào
+
+          ngaySinh: initialData.ngaySinh ? initialData.ngaySinh.split("T")[0] : "",
+
           soDinhDanh: {
-            ...initialData.soDinhDanh,
+            ...defaultData.soDinhDanh,
+            ...(initialData.soDinhDanh || {}),
             ngayCap: initialData.soDinhDanh?.ngayCap
               ? initialData.soDinhDanh.ngayCap.split("T")[0]
               : "",
           },
+
+          diaChiThuongTru: initialData.diaChiThuongTru || defaultData.diaChiThuongTru,
+          diaChiHienTai: initialData.diaChiHienTai || defaultData.diaChiHienTai,
         });
       } else {
-        // Chế độ Thêm: Reset về rỗng
+        // --- CHẾ ĐỘ THÊM MỚI ---
         setFormData(defaultData);
       }
     }
@@ -81,9 +81,7 @@ export default function NhanKhauModal({
 
   if (!isOpen) return null;
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev: any) => ({ ...prev, [name]: value }));
   };
@@ -97,123 +95,137 @@ export default function NhanKhauModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    let cleanHoKhauId = formData.hoKhauId;
 
-    // Nếu hoKhauId đang là một Object (như trong ảnh bạn gửi), ta chọc vào lấy _id ra
-    if (cleanHoKhauId && typeof cleanHoKhauId === "object") {
-      cleanHoKhauId = cleanHoKhauId._id || cleanHoKhauId.id;
+    // 👇 LOGIC XỬ LÝ OPTIONAL hoKhauId
+    let finalHoKhauId = formData.hoKhauId;
+
+    // Nếu rỗng hoặc chỉ có khoảng trắng -> Gán null (Backend sẽ hiểu là không gắn hộ khẩu)
+    if (!finalHoKhauId || finalHoKhauId.trim() === "") {
+        finalHoKhauId = null;
     }
 
-    // Nếu rỗng thì gửi null để backend không báo lỗi
-    if (!cleanHoKhauId) {
-      cleanHoKhauId = null;
-    }
-
-    // Format lại ngày giờ chuẩn ISO trước khi gửi
     const submitData = {
       ...formData,
-      hoKhauId: cleanHoKhauId,
-      ngaySinh: formData.ngaySinh
-        ? new Date(formData.ngaySinh).toISOString()
-        : null,
+      hoKhauId: finalHoKhauId, // Gửi null hoặc ID thực
+
+      ngaySinh: formData.ngaySinh ? new Date(formData.ngaySinh).toISOString() : null,
       soDinhDanh: {
         ...formData.soDinhDanh,
-        ngayCap: formData.soDinhDanh.ngayCap
+        ngayCap: formData.soDinhDanh?.ngayCap
           ? new Date(formData.soDinhDanh.ngayCap).toISOString()
           : null,
       },
     };
-    console.log("Submitting data:", submitData);
+
+    // Nếu bạn muốn "Không có thì KHÔNG GỬI luôn key đó" (delete key), dùng đoạn dưới:
+    // if (!finalHoKhauId) {
+    //    delete submitData.hoKhauId;
+    // }
+
     onSubmit(submitData);
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 py-10">
-      <div className="bg-white p-6 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-xl">
-        <h2 className="text-2xl font-bold mb-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 py-10">
+      <div className="bg-white p-8 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">
           {initialData ? "Cập Nhật Nhân Khẩu" : "Thêm Nhân Khẩu Mới"}
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* VÍ DỤ 1 SỐ TRƯỜNG CƠ BẢN (Bạn giữ nguyên form đầy đủ như cũ nhé) */}
-          <div className="grid grid-cols-3 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
+
+          {/* Hàng 0: ID Hộ Khẩu (Optional) */}
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+             <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Mã Hộ Khẩu (ID) <span className="font-sans text-gray-700 mb-1">- (Không bắt buộc)</span>
+             </label>
+             <input
+                name="hoKhauId"
+                value={formData.hoKhauId || ""}
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-black outline-none"
+                placeholder="Nhập ID hộ khẩu"
+             />
+             <p className="text-xs font-semibold text-gray-700 mt-1">Để trống nếu nhân khẩu này chưa nhập vào hộ nào.</p>
+          </div>
+
+          {/* Hàng 1 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium">Họ Tên</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Họ Tên <span className="text-red-500">*</span></label>
               <input
                 required
                 name="hoTen"
-                value={formData.hoTen}
+                value={formData.hoTen || ""}
                 onChange={handleChange}
-                className="border p-2 w-full rounded"
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="Nguyễn Văn A"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Ngày Sinh</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Ngày Sinh</label>
               <input
                 type="date"
                 name="ngaySinh"
-                value={formData.ngaySinh}
+                value={formData.ngaySinh || ""}
                 onChange={handleChange}
-                className="border p-2 w-full rounded"
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Số CCCD</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Số Định Danh</label>
               <input
                 value={formData.soDinhDanh?.so || ""}
-                onChange={(e) =>
-                  handleNestedChange("soDinhDanh", "so", e.target.value)
-                }
-                className="border p-2 w-full rounded"
+                onChange={(e) => handleNestedChange("soDinhDanh", "so", e.target.value)}
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono"
+                placeholder="00109xxxxxxx"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4"></div>
-          {/* Additional fields */}
-          <div className="grid grid-cols-3 gap-4">
+          {/* Hàng 2 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium">Bí Danh</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Bí Danh</label>
               <input
                 name="biDanh"
-                value={formData.biDanh}
+                value={formData.biDanh || ""}
                 onChange={handleChange}
-                className="border p-2 w-full rounded"
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Giới Tính</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Giới Tính</label>
               <select
                 name="gioiTinh"
-                value={formData.gioiTinh}
+                value={formData.gioiTinh || "Nam"}
                 onChange={handleChange}
-                className="border p-2 w-full rounded"
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
               >
-                <option>Nam</option>
-                <option>Nữ</option>
-                <option>Khác</option>
+                <option value="Nam">Nam</option>
+                <option value="Nữ">Nữ</option>
+                <option value="Khác">Khác</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium">Dân Tộc</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Dân Tộc</label>
               <input
                 name="danToc"
-                value={formData.danToc}
+                value={formData.danToc || ""}
                 onChange={handleChange}
-                className="border p-2 w-full rounded"
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          {/* Hàng 3: Chi tiết Giấy tờ */}
+          <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium">Loại giấy tờ</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Loại giấy tờ</label>
               <select
                 value={formData.soDinhDanh?.loai || "CCCD"}
-                onChange={(e) =>
-                  handleNestedChange("soDinhDanh", "loai", e.target.value)
-                }
-                className="border p-2 w-full rounded"
+                onChange={(e) => handleNestedChange("soDinhDanh", "loai", e.target.value)}
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none bg-white"
               >
                 <option>CCCD</option>
                 <option>CMND</option>
@@ -221,230 +233,114 @@ export default function NhanKhauModal({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium">Ngày cấp</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Ngày cấp</label>
               <input
                 type="date"
                 value={formData.soDinhDanh?.ngayCap || ""}
-                onChange={(e) =>
-                  handleNestedChange("soDinhDanh", "ngayCap", e.target.value)
-                }
-                className="border p-2 w-full rounded"
+                onChange={(e) => handleNestedChange("soDinhDanh", "ngayCap", e.target.value)}
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none bg-white"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Nơi cấp</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Nơi cấp</label>
               <input
                 value={formData.soDinhDanh?.noiCap || ""}
-                onChange={(e) =>
-                  handleNestedChange("soDinhDanh", "noiCap", e.target.value)
-                }
-                className="border p-2 w-full rounded"
+                onChange={(e) => handleNestedChange("soDinhDanh", "noiCap", e.target.value)}
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none bg-white"
+                placeholder="Cục CSQLHC về TTXH"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          {/* Hàng 4: Thông tin khác */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium">Quốc tịch</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Quốc tịch</label>
               <input
                 name="quocTich"
-                value={formData.quocTich}
+                value={formData.quocTich || ""}
                 onChange={handleChange}
-                className="border p-2 w-full rounded"
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Tôn Giáo</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Tôn Giáo</label>
               <input
                 name="tonGiao"
-                value={formData.tonGiao}
+                value={formData.tonGiao || ""}
                 onChange={handleChange}
-                className="border p-2 w-full rounded"
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">
-                Quan hệ với chủ hộ
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Quan hệ với chủ hộ</label>
               <input
                 name="quanHeVoiChuHo"
-                value={formData.quanHeVoiChuHo}
+                value={formData.quanHeVoiChuHo || ""}
                 onChange={handleChange}
-                className="border p-2 w-full rounded"
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none"
+                placeholder="Ví dụ: Chủ hộ, Con, Vợ..."
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+           {/* Hàng 5 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium">Quê Quán</label>
-              <input
-                name="queQuan"
-                value={formData.queQuan}
-                onChange={handleChange}
-                className="border p-2 w-full rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Nơi sinh</label>
-              <input
-                name="noiSinh"
-                value={formData.noiSinh}
-                onChange={handleChange}
-                className="border p-2 w-full rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Nghề nghiệp</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Nghề nghiệp</label>
               <input
                 name="ngheNghiep"
-                value={formData.ngheNghiep}
+                value={formData.ngheNghiep || ""}
                 onChange={handleChange}
-                className="border p-2 w-full rounded"
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none"
+              />
+            </div>
+             <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Ghi chú</label>
+              <input
+                name="ghiChu"
+                value={formData.ghiChu || ""}
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <h3 className="font-semibold">Địa chỉ thường trú</h3>
-              <div className="grid grid-cols-1 gap-2 mt-2">
-                <input
-                  placeholder="Số nhà"
-                  value={formData.diaChiThuongTru?.soNha || ""}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "diaChiThuongTru",
-                      "soNha",
-                      e.target.value
-                    )
-                  }
-                  className="border p-2 w-full rounded"
-                />
-                <input
-                  placeholder="Đường"
-                  value={formData.diaChiThuongTru?.duong || ""}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "diaChiThuongTru",
-                      "duong",
-                      e.target.value
-                    )
-                  }
-                  className="border p-2 w-full rounded"
-                />
-                <input
-                  placeholder="Phường/Xã"
-                  value={formData.diaChiThuongTru?.phuongXa || ""}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "diaChiThuongTru",
-                      "phuongXa",
-                      e.target.value
-                    )
-                  }
-                  className="border p-2 w-full rounded"
-                />
-                <input
-                  placeholder="Quận/Huyện"
-                  value={formData.diaChiThuongTru?.quanHuyen || ""}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "diaChiThuongTru",
-                      "quanHuyen",
-                      e.target.value
-                    )
-                  }
-                  className="border p-2 w-full rounded"
-                />
-                <input
-                  placeholder="Tỉnh/Thành"
-                  value={formData.diaChiThuongTru?.tinhThanh || ""}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "diaChiThuongTru",
-                      "tinhThanh",
-                      e.target.value
-                    )
-                  }
-                  className="border p-2 w-full rounded"
-                />
-              </div>
+          {/* Địa chỉ */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <h3 className="font-bold text-gray-800">Địa chỉ thường trú</h3>
+              <input placeholder="Số nhà" value={formData.diaChiThuongTru?.soNha || ""} onChange={(e) => handleNestedChange("diaChiThuongTru", "soNha", e.target.value)} className="w-full border p-2 rounded-lg" />
+              <input placeholder="Đường" value={formData.diaChiThuongTru?.duong || ""} onChange={(e) => handleNestedChange("diaChiThuongTru", "duong", e.target.value)} className="w-full border p-2 rounded-lg" />
+              <input placeholder="Phường/Xã" value={formData.diaChiThuongTru?.phuongXa || ""} onChange={(e) => handleNestedChange("diaChiThuongTru", "phuongXa", e.target.value)} className="w-full border p-2 rounded-lg" />
+              <input placeholder="Quận/Huyện" value={formData.diaChiThuongTru?.quanHuyen || ""} onChange={(e) => handleNestedChange("diaChiThuongTru", "quanHuyen", e.target.value)} className="w-full border p-2 rounded-lg" />
+              <input placeholder="Tỉnh/Thành" value={formData.diaChiThuongTru?.tinhThanh || ""} onChange={(e) => handleNestedChange("diaChiThuongTru", "tinhThanh", e.target.value)} className="w-full border p-2 rounded-lg" />
             </div>
 
-            <div>
-              <h3 className="font-semibold">Địa chỉ hiện tại</h3>
-              <div className="grid grid-cols-1 gap-2 mt-2">
-                <input
-                  placeholder="Số nhà"
-                  value={formData.diaChiHienTai?.soNha || ""}
-                  onChange={(e) =>
-                    handleNestedChange("diaChiHienTai", "soNha", e.target.value)
-                  }
-                  className="border p-2 w-full rounded"
-                />
-                <input
-                  placeholder="Đường"
-                  value={formData.diaChiHienTai?.duong || ""}
-                  onChange={(e) =>
-                    handleNestedChange("diaChiHienTai", "duong", e.target.value)
-                  }
-                  className="border p-2 w-full rounded"
-                />
-                <input
-                  placeholder="Phường/Xã"
-                  value={formData.diaChiHienTai?.phuongXa || ""}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "diaChiHienTai",
-                      "phuongXa",
-                      e.target.value
-                    )
-                  }
-                  className="border p-2 w-full rounded"
-                />
-                <input
-                  placeholder="Quận/Huyện"
-                  value={formData.diaChiHienTai?.quanHuyen || ""}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "diaChiHienTai",
-                      "quanHuyen",
-                      e.target.value
-                    )
-                  }
-                  className="border p-2 w-full rounded"
-                />
-                <input
-                  placeholder="Tỉnh/Thành"
-                  value={formData.diaChiHienTai?.tinhThanh || ""}
-                  onChange={(e) =>
-                    handleNestedChange(
-                      "diaChiHienTai",
-                      "tinhThanh",
-                      e.target.value
-                    )
-                  }
-                  className="border p-2 w-full rounded"
-                />
-              </div>
+            <div className="space-y-3">
+              <h3 className="font-bold text-gray-800">Địa chỉ hiện tại</h3>
+              <input placeholder="Số nhà" value={formData.diaChiHienTai?.soNha || ""} onChange={(e) => handleNestedChange("diaChiHienTai", "soNha", e.target.value)} className="w-full border p-2 rounded-lg" />
+              <input placeholder="Đường" value={formData.diaChiHienTai?.duong || ""} onChange={(e) => handleNestedChange("diaChiHienTai", "duong", e.target.value)} className="w-full border p-2 rounded-lg" />
+              <input placeholder="Phường/Xã" value={formData.diaChiHienTai?.phuongXa || ""} onChange={(e) => handleNestedChange("diaChiHienTai", "phuongXa", e.target.value)} className="w-full border p-2 rounded-lg" />
+              <input placeholder="Quận/Huyện" value={formData.diaChiHienTai?.quanHuyen || ""} onChange={(e) => handleNestedChange("diaChiHienTai", "quanHuyen", e.target.value)} className="w-full border p-2 rounded-lg" />
+              <input placeholder="Tỉnh/Thành" value={formData.diaChiHienTai?.tinhThanh || ""} onChange={(e) => handleNestedChange("diaChiHienTai", "tinhThanh", e.target.value)} className="w-full border p-2 rounded-lg" />
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 mt-6">
+          <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border rounded hover:bg-gray-100"
+              className="px-5 py-2.5 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors"
             >
-              Hủy
+              Hủy bỏ
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800"
+              className="px-6 py-2.5 bg-black text-white rounded-xl hover:bg-gray-800 font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-70"
             >
-              {isLoading ? "Đang xử lý..." : "Lưu lại"}
+              {isLoading ? "Đang xử lý..." : (initialData ? "Cập nhật" : "Thêm mới")}
             </button>
           </div>
         </form>

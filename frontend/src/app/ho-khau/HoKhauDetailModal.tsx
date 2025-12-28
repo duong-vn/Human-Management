@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import {
   X,
   UserPlus,
@@ -10,7 +10,7 @@ import {
   Calendar,
   MapPin,
 } from "lucide-react";
-import { HoKhau, ThanhVien, NhanKhauBasic } from "./types";
+import { HoKhau } from "./types";
 
 interface Props {
   isOpen: boolean;
@@ -96,7 +96,7 @@ export default function HoKhauDetailModal({
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-linear-to-r from-gray-50 to-white">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
               <Home className="text-white" size={24} />

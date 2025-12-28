@@ -1,12 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { DiaChi } from 'src/ho-khau/dto/create-ho-khau.dto';
 
 export type TamTruTamVangDocument = TamTruTamVang & Document;
 
 @Schema({ timestamps: true })
 export class TamTruTamVang {
-  @Prop({ type: Types.ObjectId, ref: 'NhanKhau', required: true })
-  nhanKhauId: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'NhanKhau' })
+  nhanKhauId?: Types.ObjectId;
 
   @Prop({ required: true })
   hoTen: string;
@@ -20,11 +21,11 @@ export class TamTruTamVang {
   @Prop({ required: true })
   denNgay: Date;
 
-  @Prop()
-  diaChiTamTru: string; // Địa chỉ tạm trú (nếu là tạm trú)
+  @Prop({ type: DiaChi })
+  diaChiTamTru: DiaChi; // Địa chỉ tạm trú (nếu là tạm trú)
 
-  @Prop()
-  diaChiThuongTru: string; // Địa chỉ thường trú gốc
+  @Prop({ type: DiaChi })
+  diaChiThuongTru: DiaChi; // Địa chỉ thường trú gốc
 
   @Prop()
   lyDo: string;
