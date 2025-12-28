@@ -24,6 +24,16 @@ export class NhanKhauService {
     });
     return createdNhanKhau.save();
   }
+  async themNhieu(createNhanKhauDto: CreateNhanKhauDto[]): Promise<NhanKhau[]> {
+    const createdNhanKhau = createNhanKhauDto.map((dto) => {
+      const { hoKhauId, ...rest } = dto;
+      return new this.nhanKhauModel({
+        ...rest,
+        hoKhauId: hoKhauId ? new Types.ObjectId(hoKhauId) : undefined,
+      });
+    });
+    return this.nhanKhauModel.insertMany(createdNhanKhau);
+  }
 
   // Thêm nhân khẩu mới sinh
   async themMoiSinh(data: {

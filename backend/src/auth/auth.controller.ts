@@ -45,7 +45,7 @@ export class AuthController {
 
   @Post('logout')
   @ApiOperation({ summary: 'Đăng xuất' })
-  async logout(@Res({ passthrough: true }) res: Response) {
+  logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('refresh_token', {
       httpOnly: true,
     });
@@ -55,7 +55,7 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @ApiOperation({ summary: 'Làm mới token' })
-  async refresh(@Res({ passthrough: true }) res: Response) {
+  refresh(@Res({ passthrough: true }) res: Response) {
     return this.authService.refresh(res);
   }
 

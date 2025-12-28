@@ -23,7 +23,10 @@ export default function Navbar() {
       setUser((prev) => (prev === nextUser ? prev : nextUser));
     };
     sync();
-    return subscribeAuth(sync);
+    const unsubscribe = subscribeAuth(sync);
+    return () => {
+      unsubscribe();
+    };
   }, []);
   if (isAuthPage) return null;
 
