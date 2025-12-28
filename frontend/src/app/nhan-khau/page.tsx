@@ -71,8 +71,10 @@ export default function NhanKhauPage() {
   const handleConfirmDelete = () => { if (deleteId) deleteMutation.mutate(deleteId); };
 
   // Lọc danh sách theo tìm kiếm
-  const filteredList = list.filter((item: any) =>
-    item.hoTen.toLowerCase().includes(searchTerm.toLowerCase())
+  const safeList = Array.isArray(list) ? list : [];
+
+  const filteredList = safeList.filter((item: any) =>
+    item.hoTen ? item.hoTen.toLowerCase().includes(searchTerm.toLowerCase()) : false
   );
 
   // --- GIAO DIỆN MỚI ---
