@@ -26,7 +26,7 @@ import {
 } from '@nestjs/swagger';
 
 @ApiTags('Thu phí')
-@ApiBearerAuth()
+@ApiBearerAuth('access-token')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('thu-phi')
 export class ThuPhiController {

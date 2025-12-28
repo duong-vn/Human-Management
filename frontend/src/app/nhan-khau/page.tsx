@@ -17,9 +17,9 @@ export default function NhanKhauPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<NhanKhau | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState(""); // Thêm state tìm kiếm cho xịn
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // --- LOGIC API (GIỮ NGUYÊN) ---
+  // --- LOGIC API ---
   const { data: list = [], isLoading, isError, error } = useQuery({
     queryKey: ["nhan-khau"],
     queryFn: getAllNhanKhau,
@@ -56,9 +56,45 @@ export default function NhanKhauPage() {
     onError: (err: any) => toast.error("Lỗi sửa: " + err.message),
   });
 
-  // --- HANDLERS (GIỮ NGUYÊN) ---
-  const handleOpenAdd = () => { setEditingItem(null); setIsModalOpen(true); };
-  const handleOpenEdit = (item: NhanKhau) => { setEditingItem(item); setIsModalOpen(true); };
+  // --- HÀM LÀM SẠCH DỮ LIỆU (FIX LỖI CONTROLLED INPUT) ---
+  const sanitizeItem = (item: any) => {
+    // Tạo bản sao để không ảnh hưởng dữ liệu gốc
+    const cleanItem = { ...item };
+
+    // Duyệt qua các key, nếu null/undefined thì gán thành chuỗi rỗng ""
+    Object.keys(cleanItem).forEach((key) => {
+      if (cleanItem[key] === null || cleanItem[key] === undefined) {
+        cleanItem[key] = "";
+      }
+    });
+
+    // Xử lý riêng object lồng nhau (Số định danh, Địa chỉ...)
+    if (cleanItem.soDinhDanh) {
+        cleanItem.soDinhDanh = {
+            ...cleanItem.soDinhDanh,
+            so: cleanItem.soDinhDanh.so || "",
+            ngayCap: cleanItem.soDinhDanh.ngayCap || "",
+            noiCap: cleanItem.soDinhDanh.noiCap || "",
+        };
+    }
+    // (Tương tự với diaChiThuongTru nếu cần)
+
+    return cleanItem;
+  };
+
+  // --- HANDLERS ---
+  const handleOpenAdd = () => {
+      setEditingItem(null);
+      setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (item: NhanKhau) => {
+      // 👇 SỬ DỤNG HÀM SANITIZE TẠI ĐÂY
+      const cleanData = sanitizeItem(item);
+      setEditingItem(cleanData);
+      setIsModalOpen(true);
+  };
+
   const handleSubmitForm = (formData: any) => {
     if (editingItem) {
       const id = (editingItem as any)._id || editingItem.id;
@@ -77,7 +113,7 @@ export default function NhanKhauPage() {
     item.hoTen ? item.hoTen.toLowerCase().includes(searchTerm.toLowerCase()) : false
   );
 
-  // --- GIAO DIỆN MỚI ---
+  // --- GIAO DIỆN ---
 
   if (isLoading) return (
     <div className="flex justify-center items-center h-screen bg-gray-50">
@@ -88,10 +124,9 @@ export default function NhanKhauPage() {
   if (isError) return <div className="text-red-500 p-10">Lỗi: {(error as Error).message}</div>;
 
   return (
-    // Wrapper nền màu xám nhẹ, full màn hình
     <div className="min-h-screen bg-gray-50/50 p-8 font-sans">
 
-      {/* HEADER: Tiêu đề + Nút Thêm + Tìm kiếm */}
+      {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Quản Lý Nhân Khẩu</h1>
@@ -123,7 +158,7 @@ export default function NhanKhauPage() {
         </div>
       </div>
 
-      {/* --- BẢNG DỮ LIỆU STYLE MỚI --- */}
+      {/* --- BẢNG DỮ LIỆU --- */}
       <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -149,7 +184,7 @@ export default function NhanKhauPage() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -10 }}
-                      transition={{ delay: index * 0.05 }} // Hiệu ứng xuất hiện lần lượt
+                      transition={{ delay: index * 0.05 }}
                       className="hover:bg-blue-50/50 transition-colors duration-200 group"
                     >
                       <td className="p-4 pl-6 font-mono text-sm text-gray-400">
@@ -180,12 +215,11 @@ export default function NhanKhauPage() {
                       </td>
 
                       <td className="p-4 text-gray-500 text-sm font-mono">
-                         {item.soDinhDanh?.so || item.soDinhDanh?.soDinhDanh || "---"}
+                          {item.soDinhDanh?.so || item.soDinhDanh?.soDinhDanh || "---"}
                       </td>
 
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                            {/* Nút Sửa */}
                             <button
                                 onClick={() => handleOpenEdit(item)}
                                 className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all hover:scale-110 tooltip"
@@ -194,7 +228,6 @@ export default function NhanKhauPage() {
                                 <Edit size={16} />
                             </button>
 
-                            {/* Nút Xoá */}
                             <button
                                 onClick={() => handleOpenDelete(itemId)}
                                 className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all hover:scale-110 tooltip"
@@ -221,7 +254,6 @@ export default function NhanKhauPage() {
         </div>
       </div>
 
-      {/* --- MODAL GIỮ NGUYÊN --- */}
       <NhanKhauModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
