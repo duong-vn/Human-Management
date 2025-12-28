@@ -8,7 +8,7 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const accessToken = getAT();
-  validateStatus: (status) => {
+  config.validateStatus = (status: number) => {
     return status < 500;
   };
   if (accessToken) {
