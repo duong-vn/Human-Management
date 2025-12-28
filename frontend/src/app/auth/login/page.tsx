@@ -19,17 +19,22 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    const response = await api.post("/auth/login", formData);
-    if (response.status === 201) {
-      setIsLoading(false);
-      setAT(response.data.access_token);
-      toast.success("Đăng nhập thành công!");
-      setUserFromToken(response.data.access_token);
-      // toast.success(JSON.stringify(getUser()));
-      // toast.success(getAT() || ""); // Debug: show the access token
-      router.replace("/");
-      return;
-    } else {
+    try {
+      const response = await api.post("/auth/login", formData);
+      if (response.status === 201) {
+        setIsLoading(false);
+        setAT(response.data.access_token);
+        toast.success("Đăng nhập thành công!");
+        setUserFromToken(response.data.access_token);
+        // toast.success(JSON.stringify(getUser()));
+        // toast.success(getAT() || ""); // Debug: show the access token
+        router.replace("/");
+        return;
+      } else {
+        setIsLoading(false);
+        toast.error("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
+      }
+    } catch (err) {
       setIsLoading(false);
       toast.error("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
     }

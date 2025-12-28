@@ -1,5 +1,5 @@
 import axios from "axios";
-import { getAT, setAT } from "./AuthToken";
+import { clearUser, getAT, setAT } from "./AuthToken";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api",
@@ -8,6 +8,9 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const accessToken = getAT();
+  validateStatus: (status) => {
+    return status < 500;
+  };
   if (accessToken) {
     config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${accessToken}`;
@@ -44,6 +47,7 @@ api.interceptors.response.use(
           queue = [];
         } catch (e) {
           setAT(null);
+          clearUser();
           queue.forEach((p) => p.reject(e));
           queue = [];
           return Promise.reject(e);
