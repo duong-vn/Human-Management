@@ -5,46 +5,58 @@ import {
   ValidateNested,
   IsOptional,
   IsMongoId,
-  Length,
   IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { DiaChi } from 'src/ho-khau/dto/create-ho-khau.dto';
 
-class DiaChiDto {
-  @IsNotEmpty({ message: 'Số nhà không được để trống' })
-  @IsString()
-  soNha: string;
+export class SoDinhDanh {
+  @IsIn(['CMND', 'CCCD'])
+  loai: 'CMND' | 'CCCD';
 
-  @IsNotEmpty({ message: 'Đường không được để trống' })
   @IsString()
-  duong: string;
+  so: string;
 
-  @IsNotEmpty({ message: 'Phường/Xã không được để trống' })
-  @IsString()
-  phuongXa: string;
+  @IsDateString()
+  ngayCap: Date;
 
-  @IsNotEmpty({ message: 'Quận/Huyện không được để trống' })
   @IsString()
-  quanHuyen: string;
-
-  @IsNotEmpty({ message: 'Tỉnh/Thành phố không được để trống' })
-  @IsString()
-  tinhThanh: string;
+  noiCap: string;
 }
-
 export class CreateNhanKhauDto {
   @IsNotEmpty({ message: 'Họ tên không được để trống' })
   @IsString()
   hoTen: string;
 
-  @IsNotEmpty({ message: 'Số CCCD không được để trống' })
+  @IsNotEmpty({ message: 'Bí danh không được để trống' })
   @IsString()
-  @Length(12, 12, { message: 'Số CCCD phải có đúng 12 chữ số' })
-  cccd: string;
+  biDanh: string;
 
   @IsNotEmpty({ message: 'Ngày sinh không được để trống' })
   @IsDateString({}, { message: 'Ngày sinh phải là định dạng ngày hợp lệ' })
   ngaySinh: Date;
+
+  @IsNotEmpty({ message: 'Nơi sinh không được để trống' })
+  @IsString()
+  noiSinh: string;
+  @IsNotEmpty({ message: 'Quê quán không được để trống' })
+  @IsString()
+  queQuan: string;
+  @IsNotEmpty({ message: 'Dân tộc không được để trống' })
+  @IsString()
+  danToc: string;
+  @IsOptional()
+  @IsString()
+  ngheNghiep?: string;
+
+  @IsOptional()
+  @IsString()
+  noiLamViec?: string;
+
+  @IsNotEmpty({ message: 'Số CCCD không được để trống' })
+  @ValidateNested()
+  @Type(() => SoDinhDanh)
+  soDinhDanh: SoDinhDanh;
 
   @IsNotEmpty({ message: 'Giới tính không được để trống' })
   @IsString()
@@ -52,18 +64,6 @@ export class CreateNhanKhauDto {
     message: 'Giới tính phải là Nam, Nữ hoặc Khác',
   })
   gioiTinh: string;
-
-  @IsNotEmpty({ message: 'Nơi sinh không được để trống' })
-  @IsString()
-  noiSinh: string;
-
-  @IsNotEmpty({ message: 'Quê quán không được để trống' })
-  @IsString()
-  queQuan: string;
-
-  @IsNotEmpty({ message: 'Dân tộc không được để trống' })
-  @IsString()
-  danToc: string;
 
   @IsOptional()
   @IsString()
@@ -73,23 +73,19 @@ export class CreateNhanKhauDto {
   @IsString()
   quocTich?: string;
 
-  @IsOptional()
-  @IsString()
-  ngheNghiep?: string;
-
-  @IsOptional()
-  @IsString()
-  noiLamViec?: string;
-
   @IsNotEmpty({ message: 'Địa chỉ hiện tại không được để trống' })
   @ValidateNested()
-  @Type(() => DiaChiDto)
-  diaChiHienTai: DiaChiDto;
+  @Type(() => DiaChi)
+  diaChiHienTai: DiaChi;
 
   @IsNotEmpty({ message: 'Địa chỉ thường trú không được để trống' })
   @ValidateNested()
-  @Type(() => DiaChiDto)
-  diaChiThuongTru: DiaChiDto;
+  @Type(() => DiaChi)
+  diaChiThuongTru: DiaChi;
+
+  @ValidateNested()
+  @Type(() => DiaChi)
+  diaChiCu: DiaChi;
 
   @IsOptional()
   @IsMongoId({ message: 'hoKhauId phải là MongoDB ObjectId hợp lệ' })

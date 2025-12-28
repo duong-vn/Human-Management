@@ -1,17 +1,17 @@
 import {
   IsNotEmpty,
   IsString,
-  IsDateString,
   IsArray,
   ValidateNested,
   IsOptional,
   IsMongoId,
+  IsDateString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-class ChuHoDto {
+export class ChuHoDto {
   @IsOptional()
-  @IsMongoId({ message: 'nhanKhauId must be a valid MongoDB ObjectId' })
+  @IsMongoId({ message: 'Cai nay phai la dang MongoDB' })
   nhanKhauId?: string;
 
   @IsNotEmpty({ message: 'Họ tên chủ hộ không được để trống' })
@@ -19,42 +19,51 @@ class ChuHoDto {
   hoTen: string;
 }
 
-class DiaChiDto {
-  @IsNotEmpty({ message: 'Số nhà không được để trống' })
+export class DiaChi {
+  @IsOptional()
   @IsString()
-  soNha: string;
+  soNha?: string;
 
-  @IsNotEmpty({ message: 'Đường không được để trống' })
+  @IsOptional()
   @IsString()
-  duong: string;
+  duong?: string;
 
-  @IsNotEmpty({ message: 'Phường/Xã không được để trống' })
+  @IsOptional()
   @IsString()
-  phuongXa: string;
+  phuongXa?: string;
 
-  @IsNotEmpty({ message: 'Quận/Huyện không được để trống' })
+  @IsOptional()
   @IsString()
-  quanHuyen: string;
+  quanHuyen?: string;
 
-  @IsNotEmpty({ message: 'Tỉnh/Thành phố không được để trống' })
+  @IsOptional()
   @IsString()
   tinhThanh: string;
 }
 
-class ThanhVienDto {
+export class ThanhVien {
   @IsMongoId({ message: 'nhanKhauId must be a valid MongoDB ObjectId' })
   nhanKhauId: string;
 
+  @IsNotEmpty({ message: 'Tên không được để trống' })
+  @IsString()
+  hoTen: string;
   @IsNotEmpty({ message: 'Quan hệ với chủ hộ không được để trống' })
   @IsString()
   quanHeVoiChuHo: string;
 }
 
-export class CreateHoKhauDto {
-  @IsNotEmpty({ message: 'Mã hộ khẩu không được để trống' })
+export class GhiChu {
+  @IsOptional()
   @IsString()
-  maHoKhau: string;
+  noiDung?: string;
 
+  @IsDateString({}, { message: 'Phải là 1 date string' })
+  @Type(() => Date)
+  capNhat: Date;
+}
+
+export class CreateHoKhauDto {
   @IsNotEmpty({ message: 'Thông tin chủ hộ không được để trống' })
   @ValidateNested()
   @Type(() => ChuHoDto)
@@ -62,12 +71,8 @@ export class CreateHoKhauDto {
 
   @IsNotEmpty({ message: 'Địa chỉ không được để trống' })
   @ValidateNested()
-  @Type(() => DiaChiDto)
-  diaChi: DiaChiDto;
-
-  @IsNotEmpty({ message: 'Ngày lập không được để trống' })
-  @IsDateString({}, { message: 'Ngày lập phải là định dạng ngày hợp lệ' })
-  ngayLap: Date;
+  @Type(() => DiaChi)
+  diaChi: DiaChi;
 
   @IsOptional()
   @IsString()
@@ -76,6 +81,9 @@ export class CreateHoKhauDto {
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ThanhVienDto)
-  thanhVien?: ThanhVienDto[];
+  @Type(() => ThanhVien)
+  thanhVien?: ThanhVien[];
+
+  @IsOptional()
+  ghiChu?: string;
 }

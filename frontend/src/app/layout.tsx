@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import MainLayout from "@/components/MainLayout";
+import { Toaster } from "sonner";
+import Boostrap from "@/components/Boostrap";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Quản Lý Nhân Khẩu",
-  description: "Hệ thống quản lý hộ khẩu và nhân khẩu",
+  title: "BlueMoon | Quản Lý Chung Cư",
+  description:
+    "Hệ thống quản lý hộ khẩu, nhân khẩu và thu phí chung cư BlueMoon",
 };
 
 export default function RootLayout({
@@ -28,7 +31,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <MainLayout>{children}</MainLayout>
+        <Toaster position="top-right" richColors closeButton />
+        <Boostrap>
+          <MainLayout>{children}</MainLayout>
+        </Boostrap>
       </body>
     </html>
   );
