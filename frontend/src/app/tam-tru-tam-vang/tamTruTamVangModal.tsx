@@ -16,8 +16,20 @@ const defaultData = {
   loai: "Tạm trú" as "Tạm trú" | "Tạm vắng",
   tuNgay: "",
   denNgay: "",
-  diaChiTamTru: "",
-  diaChiThuongTru: "",
+  diaChiTamTru: {
+    soNha: "",
+    duong: "",
+    phuongXa: "",
+    quanHuyen: "",
+    tinhThanh: "",
+  },
+  diaChiThuongTru: {
+    soNha: "",
+    duong: "",
+    phuongXa: "",
+    quanHuyen: "",
+    tinhThanh: "",
+  },
   lyDo: "",
   noiDen: "",
   ghiChu: "",
@@ -40,6 +52,8 @@ export default function TamTruTamVangModal({
           ...initialData,
           tuNgay: initialData.tuNgay ? initialData.tuNgay.split("T")[0] : "",
           denNgay: initialData.denNgay ? initialData.denNgay.split("T")[0] : "",
+          diaChiTamTru: initialData.diaChiTamTru || defaultData.diaChiTamTru,
+          diaChiThuongTru: initialData.diaChiThuongTru || defaultData.diaChiThuongTru,
         });
       } else {
         setFormData(defaultData);
@@ -56,17 +70,24 @@ export default function TamTruTamVangModal({
     setFormData((prev: any) => ({ ...prev, [name]: value }));
   };
 
+  const handleNestedChange = (parent: string, child: string, value: string) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      [parent]: { ...prev[parent], [child]: value },
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
     // Basic validation
     const newErrors: any = {};
-    if (!formData.nhanKhauId) newErrors.nhanKhauId = "Vui lòng chọn nhân khẩu";
+    // nhanKhauId is now optional
     if (!formData.hoTen.trim()) newErrors.hoTen = "Vui lòng nhập họ tên";
     if (!formData.tuNgay) newErrors.tuNgay = "Vui lòng chọn ngày bắt đầu";
     if (!formData.denNgay) newErrors.denNgay = "Vui lòng chọn ngày kết thúc";
-    if (formData.loai === "Tạm trú" && !formData.diaChiTamTru.trim()) {
+    if (formData.loai === "Tạm trú" && !formData.diaChiTamTru.tinhThanh?.trim()) {
       newErrors.diaChiTamTru = "Vui lòng nhập địa chỉ tạm trú";
     }
     if (formData.loai === "Tạm vắng" && !formData.noiDen.trim()) {
@@ -108,10 +129,10 @@ export default function TamTruTamVangModal({
             </select>
           </div>
 
-          {/* Nhân khẩu ID - tạm thời dùng input, sau này có thể làm dropdown */}
+          {/* Nhân khẩu ID - optional */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              ID Nhân khẩu *
+              ID Nhân khẩu (tùy chọn)
             </label>
             <input
               type="text"
@@ -119,7 +140,7 @@ export default function TamTruTamVangModal({
               value={formData.nhanKhauId}
               onChange={handleChange}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Nhập ID nhân khẩu"
+              placeholder="Nhập ID nhân khẩu (nếu có)"
             />
             {errors.nhanKhauId && (
               <p className="text-red-500 text-sm mt-1">{errors.nhanKhauId}</p>
@@ -183,14 +204,43 @@ export default function TamTruTamVangModal({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Địa chỉ thường trú
             </label>
-            <input
-              type="text"
-              name="diaChiThuongTru"
-              value={formData.diaChiThuongTru}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Nhập địa chỉ thường trú"
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <input
+                type="text"
+                value={formData.diaChiThuongTru.soNha}
+                onChange={(e) => handleNestedChange('diaChiThuongTru', 'soNha', e.target.value)}
+                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Số nhà"
+              />
+              <input
+                type="text"
+                value={formData.diaChiThuongTru.duong}
+                onChange={(e) => handleNestedChange('diaChiThuongTru', 'duong', e.target.value)}
+                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Đường"
+              />
+              <input
+                type="text"
+                value={formData.diaChiThuongTru.phuongXa}
+                onChange={(e) => handleNestedChange('diaChiThuongTru', 'phuongXa', e.target.value)}
+                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Phường/Xã"
+              />
+              <input
+                type="text"
+                value={formData.diaChiThuongTru.quanHuyen}
+                onChange={(e) => handleNestedChange('diaChiThuongTru', 'quanHuyen', e.target.value)}
+                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Quận/Huyện"
+              />
+              <input
+                type="text"
+                value={formData.diaChiThuongTru.tinhThanh}
+                onChange={(e) => handleNestedChange('diaChiThuongTru', 'tinhThanh', e.target.value)}
+                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent col-span-2"
+                placeholder="Tỉnh/Thành"
+              />
+            </div>
           </div>
 
           {/* Fields specific to loại */}
@@ -199,17 +249,46 @@ export default function TamTruTamVangModal({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Địa chỉ tạm trú *
               </label>
-              <input
-                type="text"
-                name="diaChiTamTru"
-                value={formData.diaChiTamTru}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Nhập địa chỉ tạm trú"
-              />
-              {errors.diaChiTamTru && (
-                <p className="text-red-500 text-sm mt-1">{errors.diaChiTamTru}</p>
-              )}
+              <div className="grid grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  value={formData.diaChiTamTru.soNha}
+                  onChange={(e) => handleNestedChange('diaChiTamTru', 'soNha', e.target.value)}
+                  className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Số nhà"
+                />
+                <input
+                  type="text"
+                  value={formData.diaChiTamTru.duong}
+                  onChange={(e) => handleNestedChange('diaChiTamTru', 'duong', e.target.value)}
+                  className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Đường"
+                />
+                <input
+                  type="text"
+                  value={formData.diaChiTamTru.phuongXa}
+                  onChange={(e) => handleNestedChange('diaChiTamTru', 'phuongXa', e.target.value)}
+                  className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Phường/Xã"
+                />
+                <input
+                  type="text"
+                  value={formData.diaChiTamTru.quanHuyen}
+                  onChange={(e) => handleNestedChange('diaChiTamTru', 'quanHuyen', e.target.value)}
+                  className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Quận/Huyện"
+                />
+                <input
+                  type="text"
+                  value={formData.diaChiTamTru.tinhThanh}
+                  onChange={(e) => handleNestedChange('diaChiTamTru', 'tinhThanh', e.target.value)}
+                  className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent col-span-2"
+                  placeholder="Tỉnh/Thành"
+                />
+                {errors.diaChiTamTru && (
+                  <p className="text-red-500 text-sm mt-1 col-span-2">{errors.diaChiTamTru}</p>
+                )}
+              </div>
             </div>
           )}
 

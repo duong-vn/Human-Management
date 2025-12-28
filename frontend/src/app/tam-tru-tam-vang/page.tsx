@@ -31,13 +31,30 @@ export default function TamTruTamVangPage() {
   });
 
   const addMutation = useMutation({
-    mutationFn: (newItem: any) => createTamTruTamVang(newItem),
+    mutationFn: createTamTruTamVang,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tam-tru-tam-vang"] });
       toast.success("Đăng ký thành công!");
       setIsModalOpen(false);
     },
-    onError: (error: any) => toast.error("Lỗi: " + (error.response?.data?.message || "Có lỗi xảy ra")),
+    onError: (error: any) => {
+      const message = error.response?.data?.message || error.message || "Có lỗi xảy ra";
+      toast.error("Lỗi đăng ký: " + message);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => updateTamTruTamVang(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tam-tru-tam-vang"] });
+      toast.success("Cập nhật thành công!");
+      setIsModalOpen(false);
+      setEditingItem(null);
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || error.message || "Có lỗi xảy ra";
+      toast.error("Lỗi cập nhật: " + message);
+    },
   });
 
   const deleteMutation = useMutation({
@@ -47,18 +64,9 @@ export default function TamTruTamVangPage() {
       toast.success("Đã xoá thành công!");
       setDeleteId(null);
     },
-    onError: () => toast.error("Xoá thất bại!"),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => updateTamTruTamVang(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tam-tru-tam-vang"] });
-      setIsModalOpen(false);
-      setEditingItem(null);
-      toast.success("Cập nhật thành công!");
+    onError: (error: any) => {
+      toast.error("Xoá thất bại!");
     },
-    onError: (err: any) => toast.error("Lỗi sửa: " + err.message),
   });
 
   // --- HANDLERS ---
@@ -75,22 +83,42 @@ export default function TamTruTamVangPage() {
   const handleOpenDelete = (id: string) => setDeleteId(id);
   const handleConfirmDelete = () => { if (deleteId) deleteMutation.mutate(deleteId); };
 
-  // Lọc danh sách theo tìm kiếm
+  // Filter and Search
   const safeList = Array.isArray(list) ? list : [];
-
   const filteredList = safeList.filter((item: any) =>
-    item.hoTen ? item.hoTen.toLowerCase().includes(searchTerm.toLowerCase()) : false
+    item.hoTen && item.hoTen.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // --- GIAO DIỆN ---
+  // Utility Functions
+  const formatDiaChi = (diaChi?: any) => {
+    if (!diaChi || typeof diaChi !== 'object') return "---";
+    const parts = [
+      diaChi.soNha,
+      diaChi.duong,
+      diaChi.phuongXa,
+      diaChi.quanHuyen,
+      diaChi.tinhThanh,
+    ].filter(part => part && part.trim());
+    return parts.length > 0 ? parts.join(", ") : "---";
+  };
 
-  if (isLoading) return (
-    <div className="flex justify-center items-center h-screen bg-gray-50">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
-    </div>
-  );
+  // Loading and Error States
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+      </div>
+    );
+  }
 
-  if (isError) return <div className="text-red-500 p-10">Lỗi: {(error as Error).message}</div>;
+  if (isError) {
+    return (
+      <div className="text-red-500 p-10 text-center">
+        <h2 className="text-xl font-bold mb-4">Có lỗi xảy ra</h2>
+        <p>{(error as Error)?.message || "Không thể tải dữ liệu"}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-8 font-sans">
@@ -216,7 +244,7 @@ export default function TamTruTamVangPage() {
                         <div className="flex items-center gap-2">
                           <MapPin size={14} />
                           <span>
-                            {item.loai === "Tạm trú" ? item.diaChiTamTru : item.noiDen}
+                            {item.loai === "Tạm trú" ? formatDiaChi(item.diaChiTamTru) : item.noiDen || "---"}
                           </span>
                         </div>
                       </td>
