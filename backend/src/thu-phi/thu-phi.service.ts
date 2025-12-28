@@ -245,7 +245,9 @@ export class ThuPhiService {
         $group: {
           _id: '$kyThu',
           tongTien: {
-            $sum: { $cond: [{ $eq: ['$trangThai', 'Đã thu'] }, '$tongTien', 0] },
+            $sum: {
+              $cond: [{ $eq: ['$trangThai', 'Đã thu'] }, '$tongTien', 0],
+            },
           },
           soHoDaNop: {
             $addToSet: {

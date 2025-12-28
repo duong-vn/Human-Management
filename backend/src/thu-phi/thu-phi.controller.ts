@@ -281,10 +281,7 @@ export class ThuPhiController {
     description: 'Lấy tổng tiền và số hộ đã nộp trong một đợt thu',
   })
   @ApiQuery({ name: 'nam', required: false, type: Number })
-  thongKeTheoDotThu(
-    @Param('kyThu') kyThu: string,
-    @Query('nam') nam?: string,
-  ) {
+  thongKeTheoDotThu(@Param('kyThu') kyThu: string, @Query('nam') nam?: string) {
     return this.thuPhiService.thongKeTheoDotThu(
       decodeURIComponent(kyThu),
       nam ? parseInt(nam) : undefined,
@@ -299,10 +296,7 @@ export class ThuPhiController {
       'Lấy danh sách chi tiết từng hộ đã nộp tiền, bao gồm các khoản đã nộp',
   })
   @ApiQuery({ name: 'nam', required: false, type: Number })
-  getChiTietHoDaNop(
-    @Param('kyThu') kyThu: string,
-    @Query('nam') nam?: string,
-  ) {
+  getChiTietHoDaNop(@Param('kyThu') kyThu: string, @Query('nam') nam?: string) {
     return this.thuPhiService.getChiTietHoDaNopTheoDot(
       decodeURIComponent(kyThu),
       nam ? parseInt(nam) : undefined,
