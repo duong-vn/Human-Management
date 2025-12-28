@@ -136,15 +136,19 @@ export default function QuanLyPhiVeSinh() {
       tongTien: Number(tongTien),
     };
 
-    if (
-      confirm(
-        `Xác nhận thu ${tongTien.toLocaleString()}đ của hộ ${
-          hoKhau.chuHo?.hoTen
-        }?`
-      )
-    ) {
-      thuPhiMutation.mutate(payload);
-    }
+    // 👇 THAY THẾ CONFIRM BẰNG TOAST TẠI ĐÂY
+    toast(`Thu phí: ${hoKhau.chuHo?.hoTen || "Không rõ"}`, {
+      description: `Xác nhận thu ${tongTien.toLocaleString()}đ?`,
+      action: {
+        label: "Xác nhận",
+        onClick: () => thuPhiMutation.mutate(payload),
+      },
+      cancel: {
+        label: "Hủy",
+        onClick: () => {}, // Hàm rỗng để tránh lỗi TypeScript
+      },
+      duration: 5000, // Hiện trong 5s
+    });
   };
 
   return (
