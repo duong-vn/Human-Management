@@ -8,10 +8,10 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const accessToken = getAT();
-  config.validateStatus = (status: number) => {
-    return status < 500;
-  };
-  
+  // config.validateStatus = (status: number) => {
+  //   return status < 500;
+  // };
+
   if (accessToken) {
     config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${accessToken}`;

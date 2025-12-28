@@ -50,6 +50,11 @@ const menuItems = [
     icon: DocumentTextIcon,
   },
   {
+    title: "Tạm trú tạm vắng",
+    href: "/tam-tru-tam-vang",
+    icon: DocumentTextIcon,
+  },
+  {
     title: "Thống kê báo cáo",
     href: "/thong-ke",
     icon: ChartBarIcon,
