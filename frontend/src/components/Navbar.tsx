@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { getAT, getUser, User } from "@/lib/AuthToken";
+import {
+  clearUser,
+  getUser,
+  setAT,
+  subscribeAuth,
+  User,
+} from "@/lib/AuthToken";
 import api from "@/lib/axios";
 import { toast } from "sonner";
 
@@ -12,17 +18,27 @@ export default function Navbar() {
   const isAuthPage = pathname?.startsWith("/auth");
   const [user, setUser] = useState<User>(getUser());
   useEffect(() => {
-    setUser(getUser());
-  }, [getAT()]);
+    const sync = () => {
+      const nextUser = getUser();
+      setUser((prev) => (prev === nextUser ? prev : nextUser));
+    };
+    sync();
+    return subscribeAuth(sync);
+  }, []);
   if (isAuthPage) return null;
 
   const handleLogout = async () => {
-    // Clear token and user info
+    clearUser();
+    setAT(null);
     setUser(null);
-    const res = await api.post("/auth/logout");
-    if (res.status === 201) {
-      toast.success("Đăng xuất thành công!");
-    } else {
+    try {
+      const res = await api.post("/auth/logout");
+      if (res.status === 201) {
+        toast.success("Đăng xuất thành công!");
+      } else {
+        toast.error("Đăng xuất thất bại!");
+      }
+    } catch {
       toast.error("Đăng xuất thất bại!");
     }
   };

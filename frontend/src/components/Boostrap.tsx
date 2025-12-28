@@ -13,38 +13,36 @@ export default function Bootstrap({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    (async () => {
+    let mounted = true;
+
+    const bootstrap = async () => {
       try {
-        // 1. Kiểm tra xem có token trong máy không trước đã
-        const token = getAT();
+        const res = await api.post("/auth/refresh");
 
-        // Nếu không có token thì thôi, không gọi API nữa để tránh lỗi 400
-        if (!token) {
-          console.log("Không tìm thấy token, vào chế độ khách.");
-          setReady(true); // Cho hiện web luôn
-          return;
-        }
-
-        // 2. Nếu có token thì mới gọi refresh
-        const res = await api.post("/auth/refresh"); // Hoặc "/api/auth/refresh" tùy config backend
-
-        if (res.status === 201 || res.status === 200) {
+        if (res.status === 200 || res.status === 201) {
           setAT(res.data.access_token);
           setUserFromToken(res.data.access_token);
-          console.log("Đã làm mới phiên đăng nhập:", getUser());
+          console.log("Đã làm mới phiên đăng nhập");
+        } else {
+          setAT(null);
+          clearUser();
+          console.log("Phiên đăng nhập đã hết hạn");
         }
-      } catch (error) {
-        // 3. Nếu lỗi (ví dụ token hết hạn, backend lỗi 400/401...)
-        console.log("Phiên đăng nhập lỗi hoặc hết hạn:", error);
-
-        // Xóa sạch dữ liệu cũ để tránh lỗi tiếp
+      } catch (err) {
+        // refresh fail là chuyện BÌNH THƯỜNG
         setAT(null);
         clearUser();
+        console.log("Không có phiên đăng nhập");
       } finally {
-        // 4. [QUAN TRỌNG NHẤT] Dù thành công hay thất bại, LUÔN LUÔN cho hiện web
-        setReady(true);
+        if (mounted) setReady(true); // 👈 CỨU TRẮNG TRANG
       }
-    })();
+    };
+
+    bootstrap();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   if (!ready) {

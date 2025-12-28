@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
@@ -80,7 +84,7 @@ export class AuthService {
       const access_token = this.jwtService.sign(payload);
       return { access_token };
     } catch (e) {
-      throw new BadRequestException('Refresh token sai hay sao y');
+      throw new UnauthorizedException('Refresh token sai hay sao y');
     }
   }
 
