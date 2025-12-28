@@ -11,6 +11,7 @@ api.interceptors.request.use((config) => {
   config.validateStatus = (status: number) => {
     return status < 500;
   };
+  
   if (accessToken) {
     config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${accessToken}`;
