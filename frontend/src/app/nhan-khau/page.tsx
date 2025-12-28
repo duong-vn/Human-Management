@@ -1,13 +1,24 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"; // Import React Query
-import { createNhanKhau, deleteNhanKhau, getAllNhanKhau } from "./api";
+import {
+  createNhanKhau,
+  deleteNhanKhau,
+  getAllNhanKhau,
+  updateNhanKhau,
+} from "./api";
 import { NhanKhau } from "./types";
+import { toast } from "sonner";
+import { totalmem } from "os";
+import ConfirmModal from "./confirmModal";
+import NhanKhauModal from "./nhanKhauModal";
 
 export default function NhanKhauPage() {
   const queryClient = useQueryClient(); // Dùng để ra lệnh "làm mới dữ liệu"
-
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<NhanKhau | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   // 1. TỰ ĐỘNG LẤY DỮ LIỆU (Thay thế useEffect + useState)
   const {
     data: list = [],
@@ -25,89 +36,82 @@ export default function NhanKhauPage() {
     onSuccess: () => {
       // Khi thêm thành công -> Báo React Query tải lại danh sách ngay lập tức
       queryClient.invalidateQueries({ queryKey: ["nhan-khau"] });
-      alert("Thêm thành công!");
+      toast.success("Thêm thành công!");
     },
     onError: (error: any) => {
-      alert("Lỗi: " + (error.response?.data?.message || "Có lỗi xảy ra"));
+      toast.error("Lỗi: " + (error.response?.data?.message || "Có lỗi xảy ra"));
     },
   });
 
   // 3. XỬ LÝ XOÁ (Mutation)
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteNhanKhau(id),
+    mutationFn: deleteNhanKhau,
     onSuccess: () => {
       // Khi xoá thành công -> Tự động tải lại danh sách
       queryClient.invalidateQueries({ queryKey: ["nhan-khau"] });
-      alert("Đã xoá thành công!");
+      toast.success("Đã xoá thành công!");
     },
     onError: () => {
-      alert("Xoá thất bại! Có thể do lỗi kết nối.");
+      toast.error("Xoá thất bại! Có thể do lỗi kết nối.");
     },
   });
 
+  //4.Mutation Sửa
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      updateNhanKhau(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["nhan-khau"] });
+      setIsModalOpen(false);
+      setEditingItem(null);
+      toast.success("Cập nhật thành công!");
+    },
+    onError: (err: any) => toast.error("Lỗi sửa: " + err.message),
+  });
   // --- CÁC HÀM SỰ KIỆN ---
-
-  const handleAdd = () => {
-    const newNhanKhau: Omit<NhanKhau, "id"> = {
-      hoTen: "Luong Thanh Tung",
-      biDanh: "tungcso",
-      danToc: "Kinh",
-      ngaySinh: new Date("2005-08-08").toISOString(), // Đã sửa lỗi dấu : thừa
-      gioiTinh: "Nam",
-      soDinhDanh: {
-        loai: "CCCD", // Sửa lại cho khớp backend nếu cần
-        so: "0123864213",
-        ngayCap: new Date("2020-01-01").toISOString(),
-        noiCap: "Ha Noi",
-      },
-      hoKhauId: "65b2a3c4d5e6f7a8b9c0d1e2",
-      trangThai: "Thường trú",
-      quocTich: "Việt Nam",
-      tonGiao: "Không",
-      quanHeVoiChuHo: "Con",
-      queQuan: "Ha Noi",
-      noiSinh: "Ha Noi",
-      ngheNghiep: "Sinh vien",
-      noiLamViec: "HUST",
-      diaChiThuongTru: {
-        soNha: "12",
-        duong: "nguyen duong",
-        phuongXa: "Nhat ban",
-        quanHuyen: "2",
-        tinhThanh: "Thanh Pho",
-      },
-      diaChiHienTai: {
-        soNha: "12",
-        duong: "nguyen duong",
-        phuongXa: "Nhat ban",
-        quanHuyen: "2",
-        tinhThanh: "Thanh Pho",
-      },
-    };
-
-    // Gọi mutation thêm
-    addMutation.mutate(newNhanKhau);
+//Modal thêm
+  const handleOpenAdd = () => {
+    setEditingItem(null);
+    setIsModalOpen(true);
   };
+//modal sửa
+  const handleOpenEdit =(item: NhanKhau) => {
+    setEditingItem(item);
+    setIsModalOpen(true);
+  }
+//xử lý khi bấm nút lưu ở modal
+const handleSubmitForm = (formData: any) => {
+  if(editingItem) {
+    const id = (editingItem as any)._id || editingItem.id;
+    updateMutation.mutate({id, data: formData});
+  } else {
+    addMutation.mutate(formData);
+  }
+}
 
-  const handleDelete = (id: string) => {
-    if (!confirm("Bạn chắc chắn muốn xoá?")) return;
-    // Gọi mutation xoá
-    deleteMutation.mutate(id);
-  };
-
+//HÀM MỞ MODAL XOÁ
+const handleOpenDelete = (id: string) => {
+  setDeleteId(id);
+};
+//HAM XAC NHAN XOA THAT
+const handleConfirmDelete = () => {
+  if(deleteId) {
+    deleteMutation.mutate(deleteId);
+  }
+};
   // --- GIAO DIỆN ---
 
   if (isLoading) return <div>Đang tải dữ liệu...</div>;
   if (isError)
     return <div style={{ color: "red" }}>Lỗi: {(error as Error).message}</div>;
 
-  return (
+return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Quản Lí Nhân Khẩu</h1>
 
       <button
-        onClick={handleAdd}
-        disabled={addMutation.isPending} // Khoá nút khi đang thêm
+        onClick={handleOpenAdd}
+        disabled={addMutation.isPending}
         style={{
           padding: "10px",
           background: addMutation.isPending ? "#ccc" : "black",
@@ -118,32 +122,36 @@ export default function NhanKhauPage() {
         {addMutation.isPending ? "Đang thêm..." : "Thêm nhân khẩu"}
       </button>
 
+      {/* --- CHÈN 2 MODAL VÀO ĐÂY --- */}
+
+      {/* Modal Thêm/Sửa */}
+      <NhanKhauModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleSubmitForm}
+        initialData={editingItem}
+        isLoading={addMutation.isPending || updateMutation.isPending}
+      />
+
+      {/* Modal Xoá (Chỉ hiện khi có ID cần xoá) */}
+      <ConfirmModal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleConfirmDelete}
+        isLoading={deleteMutation.isPending}
+      />
+
+      {/* --- BẢNG DỮ LIỆU --- */}
       <div style={{ overflowX: "auto" }}>
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            border: "1px solid #ccc",
-          }}
-        >
+        <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #ccc" }}>
           <thead>
             <tr style={{ background: "#f0f0f0" }}>
               <th style={{ padding: "10px", border: "1px solid #ccc" }}>ID</th>
-              <th style={{ padding: "10px", border: "1px solid #ccc" }}>
-                Họ Tên
-              </th>
-              <th style={{ padding: "10px", border: "1px solid #ccc" }}>
-                Ngày Sinh
-              </th>
-              <th style={{ padding: "10px", border: "1px solid #ccc" }}>
-                Giới Tính
-              </th>
-              <th style={{ padding: "10px", border: "1px solid #ccc" }}>
-                Số Định Danh
-              </th>
-              <th style={{ padding: "10px", border: "1px solid #ccc" }}>
-                Hành động
-              </th>
+              <th style={{ padding: "10px", border: "1px solid #ccc" }}>Họ Tên</th>
+              <th style={{ padding: "10px", border: "1px solid #ccc" }}>Ngày Sinh</th>
+              <th style={{ padding: "10px", border: "1px solid #ccc" }}>Giới Tính</th>
+              <th style={{ padding: "10px", border: "1px solid #ccc" }}>Số Định Danh</th>
+              <th style={{ padding: "10px", border: "1px solid #ccc" }}>Hành động</th>
             </tr>
           </thead>
           <tbody>
@@ -151,48 +159,32 @@ export default function NhanKhauPage() {
               const itemId = item._id || item.id;
               return (
                 <tr key={itemId || Math.random()}>
-                  <td
-                    style={{
-                      padding: "10px",
-                      border: "1px solid #ccc",
-                      textAlign: "center",
-                    }}
-                  >
+                  <td style={{ padding: "10px", border: "1px solid #ccc", textAlign: "center" }}>
                     {itemId?.toString().slice(-4)}
                   </td>
+                  <td style={{ padding: "10px", border: "1px solid #ccc" }}>{item.hoTen}</td>
                   <td style={{ padding: "10px", border: "1px solid #ccc" }}>
-                    {item.hoTen}
+                    {item.ngaySinh ? new Date(item.ngaySinh).toLocaleDateString("vi-VN") : ""}
                   </td>
-                  <td style={{ padding: "10px", border: "1px solid #ccc" }}>
-                    {item.ngaySinh
-                      ? new Date(item.ngaySinh).toLocaleDateString("vi-VN")
-                      : ""}
-                  </td>
-                  <td
-                    style={{
-                      padding: "10px",
-                      border: "1px solid #ccc",
-                      textAlign: "center",
-                    }}
-                  >
+                  <td style={{ padding: "10px", border: "1px solid #ccc", textAlign: "center" }}>
                     {item.gioiTinh}
                   </td>
                   <td style={{ padding: "10px", border: "1px solid #ccc" }}>
-                    {item.soDinhDanh?.so ||
-                      item.soDinhDanh?.soDinhDanh ||
-                      item.cccd ||
-                      ""}
+                    {item.soDinhDanh?.so || item.soDinhDanh?.soDinhDanh || item.cccd || ""}
                   </td>
-                  <td
-                    style={{
-                      padding: "10px",
-                      border: "1px solid #ccc",
-                      textAlign: "center",
-                    }}
-                  >
+                  <td style={{ padding: "10px", border: "1px solid #ccc", textAlign: "center" }}>
+
+                    {/* Nút Sửa */}
                     <button
-                      onClick={() => handleDelete(itemId)}
-                      disabled={deleteMutation.isPending}
+                        onClick={() => handleOpenEdit(item)}
+                        style={{ marginRight: "10px", color: "blue", cursor: "pointer", border: "none", background: "none", textDecoration: "underline" }}
+                    >
+                        Sửa
+                    </button>
+
+                    {/* Nút Xoá: Gọi handleOpenDelete thay vì handleDelete */}
+                    <button
+                      onClick={() => handleOpenDelete(itemId)}
                       style={{
                         padding: "5px 10px",
                         background: "red",
@@ -200,10 +192,9 @@ export default function NhanKhauPage() {
                         border: "none",
                         borderRadius: "4px",
                         cursor: "pointer",
-                        opacity: deleteMutation.isPending ? 0.5 : 1,
                       }}
                     >
-                      {deleteMutation.isPending ? "..." : "Xoá"}
+                      Xoá
                     </button>
                   </td>
                 </tr>

@@ -21,5 +21,11 @@ export const createNhanKhau = async (
 };
 
 export const deleteNhanKhau = async (id: string): Promise<void> => {
-  await api.delete(`/api/nhan-khau/${id}`);
+  await api.delete(`/nhan-khau/${id}`);
+};
+
+export const updateNhanKhau = async (id: string, data: Partial<NhanKhau>): Promise<NhanKhau> => {
+  // Lưu ý: dùng put hoặc patch tùy Backend của bạn (thường là patch để sửa một phần)
+  const res = await api.patch(`/nhan-khau/${id}`, data);
+  return res.data;
 };
