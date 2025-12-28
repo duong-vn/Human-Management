@@ -11,7 +11,7 @@ interface Props {
 }
 
 const defaultData = {
-  nhanKhauId: "",
+  nhanKhauId: undefined,
   hoTen: "",
   loai: "Tạm trú" as "Tạm trú" | "Tạm vắng",
   tuNgay: "",
