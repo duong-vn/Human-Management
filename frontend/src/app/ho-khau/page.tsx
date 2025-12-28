@@ -374,7 +374,7 @@ export default function HoKhauPage() {
             <select
               value={filterTrangThai}
               onChange={(e) => setFilterTrangThai(e.target.value)}
-              className="pl-10 pr-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white shadow-sm transition-all appearance-none min-w-[160px]"
+              className="pl-10 pr-4 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white shadow-sm transition-all appearance-none min-w-40"
             >
               <option value="">Tất cả trạng thái</option>
               <option value="Đang hoạt động">Đang hoạt động</option>

@@ -249,4 +249,98 @@ export class ThuPhiController {
   remove(@Param('id') id: string) {
     return this.thuPhiService.remove(id);
   }
+
+  // ====== API THỐNG KÊ CHO CÁN BỘ KẾ TOÁN ======
+
+  @Get('ke-toan/tong-quan/:nam')
+  @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO, UserRole.KE_TOAN)
+  @ApiOperation({
+    summary: 'Thống kê tổng quan cho kế toán',
+    description:
+      'Lấy thống kê tổng số tiền đã thu, chưa thu, đang nợ, phân theo tháng và theo khoản thu',
+  })
+  thongKeTongQuan(@Param('nam') nam: string) {
+    return this.thuPhiService.thongKeTongQuan(parseInt(nam));
+  }
+
+  @Get('ke-toan/dot-thu/:nam')
+  @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO, UserRole.KE_TOAN)
+  @ApiOperation({
+    summary: 'Danh sách các đợt thu trong năm',
+    description:
+      'Lấy danh sách các đợt thu (kỳ thu) với tổng tiền và số hộ đã nộp',
+  })
+  getDanhSachDotThu(@Param('nam') nam: string) {
+    return this.thuPhiService.getDanhSachDotThu(parseInt(nam));
+  }
+
+  @Get('ke-toan/dot-thu/:kyThu/thong-ke')
+  @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO, UserRole.KE_TOAN)
+  @ApiOperation({
+    summary: 'Thống kê theo đợt thu cụ thể',
+    description: 'Lấy tổng tiền và số hộ đã nộp trong một đợt thu',
+  })
+  @ApiQuery({ name: 'nam', required: false, type: Number })
+  thongKeTheoDotThu(
+    @Param('kyThu') kyThu: string,
+    @Query('nam') nam?: string,
+  ) {
+    return this.thuPhiService.thongKeTheoDotThu(
+      decodeURIComponent(kyThu),
+      nam ? parseInt(nam) : undefined,
+    );
+  }
+
+  @Get('ke-toan/dot-thu/:kyThu/da-nop')
+  @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO, UserRole.KE_TOAN)
+  @ApiOperation({
+    summary: 'Chi tiết các hộ đã nộp trong đợt thu',
+    description:
+      'Lấy danh sách chi tiết từng hộ đã nộp tiền, bao gồm các khoản đã nộp',
+  })
+  @ApiQuery({ name: 'nam', required: false, type: Number })
+  getChiTietHoDaNop(
+    @Param('kyThu') kyThu: string,
+    @Query('nam') nam?: string,
+  ) {
+    return this.thuPhiService.getChiTietHoDaNopTheoDot(
+      decodeURIComponent(kyThu),
+      nam ? parseInt(nam) : undefined,
+    );
+  }
+
+  @Get('ke-toan/dot-thu/:kyThu/chua-nop')
+  @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO, UserRole.KE_TOAN)
+  @ApiOperation({
+    summary: 'Chi tiết các hộ chưa nộp trong đợt thu',
+    description: 'Lấy danh sách các hộ chưa nộp hoặc đang nợ trong đợt thu',
+  })
+  @ApiQuery({ name: 'nam', required: false, type: Number })
+  getChiTietHoChuaNop(
+    @Param('kyThu') kyThu: string,
+    @Query('nam') nam?: string,
+  ) {
+    return this.thuPhiService.getChiTietHoChuaNopTheoDot(
+      decodeURIComponent(kyThu),
+      nam ? parseInt(nam) : undefined,
+    );
+  }
+
+  @Get('ke-toan/ho-khau/:hoKhauId/lich-su')
+  @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO, UserRole.KE_TOAN)
+  @ApiOperation({
+    summary: 'Lịch sử nộp tiền của một hộ khẩu',
+    description:
+      'Xem chi tiết tất cả các khoản tiền mà hộ đã nộp, tổng đã nộp và còn nợ',
+  })
+  @ApiQuery({ name: 'nam', required: false, type: Number })
+  getLichSuNopTien(
+    @Param('hoKhauId') hoKhauId: string,
+    @Query('nam') nam?: string,
+  ) {
+    return this.thuPhiService.getLichSuNopTien(
+      hoKhauId,
+      nam ? parseInt(nam) : undefined,
+    );
+  }
 }
