@@ -25,7 +25,7 @@ export default function ThuPhiModal({
   const [formData, setFormData] = useState({
     hoKhauId: "",
     nam: new Date().getFullYear(),
-    kyThu: `Tháng ${new Date().getMonth() + 1}/${new Date().getFullYear()}`,
+    kyThu: `Tháng ${new Date().getMonth() + 1}`,
   });
   const [selectedFees, setSelectedFees] = useState<any[]>([]);
 

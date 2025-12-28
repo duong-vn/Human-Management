@@ -1,12 +1,18 @@
 "use client";
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createThuPhi, createKhoanThu, getAllThuPhi } from "./api"; // Nhớ import getAllThuPhi
+import { createThuPhi, createKhoanThu, getAllThuPhi } from "./api";
 import { toast } from "sonner";
-import { Plus, Settings, FileText, User, Calendar } from "lucide-react";
+import {
+  Plus,
+  Settings,
+  User,
+  Calendar,
+  CheckCircle, // 👇 Thêm icon này
+  Clock        // 👇 Thêm icon này
+} from "lucide-react";
 import ThuPhiModal from "./ThuPhiModal";
 import CreateKhoanThuModal from "./CreateKhoanThuModal";
-import { motion, AnimatePresence } from "framer-motion"; // Hiệu ứng chuyển động
 
 export default function ThuPhiPage() {
   const queryClient = useQueryClient();
@@ -15,7 +21,7 @@ export default function ThuPhiPage() {
 
   // 1. LẤY DANH SÁCH PHIẾU THU
   const { data: listThuPhi = [], isLoading } = useQuery({
-    queryKey: ["thu-phi"], // Key này khớp với invalidateQueries bên dưới
+    queryKey: ["thu-phi"],
     queryFn: async () => {
       const res = await getAllThuPhi();
       return Array.isArray(res) ? res : res?.data || [];
@@ -26,7 +32,7 @@ export default function ThuPhiPage() {
   const createPhieuThuMutation = useMutation({
     mutationFn: createThuPhi,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["thu-phi"] }); // -> Tự động tải lại bảng
+      queryClient.invalidateQueries({ queryKey: ["thu-phi"] });
       setIsThuPhiModalOpen(false);
       toast.success("Tạo phiếu thu thành công!");
     },
@@ -44,12 +50,6 @@ export default function ThuPhiPage() {
     },
     onError: (err: any) => toast.error("Lỗi tạo khoản thu: " + err.message),
   });
-
-  // Hàm tính tổng tiền của 1 phiếu (nếu backend không trả về sẵn)
-  const calculateTotal = (chiTietThu: any[]) => {
-    if (!Array.isArray(chiTietThu)) return 0;
-    return chiTietThu.reduce((sum, item) => sum + (item.soTien || 0), 0);
-  };
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-8">
@@ -79,11 +79,8 @@ export default function ThuPhiPage() {
         </div>
       </div>
 
-      {/* BODY: BẢNG DANH SÁCH (Phiên bản Simple - Dễ debug) */}
+      {/* BODY: BẢNG DANH SÁCH */}
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden mt-4">
-        {/* Debug: In dữ liệu ra màn hình để kiểm tra */}
-        {/* <pre>{JSON.stringify(listThuPhi, null, 2)}</pre> */}
-
         {isLoading ? (
           <div className="p-10 text-center text-gray-500">
             Đang tải dữ liệu...
@@ -98,6 +95,7 @@ export default function ThuPhiPage() {
                   <th className="p-4">Kỳ Thu</th>
                   <th className="p-4">Chi Tiết</th>
                   <th className="p-4 text-right">Tổng Tiền</th>
+                  {/* 👇 Đã có header, giờ ta thêm body tương ứng */}
                   <th className="p-4 text-right">Ngày Thu</th>
                   <th className="p-4 text-right">Trạng thái</th>
                 </tr>
@@ -107,7 +105,7 @@ export default function ThuPhiPage() {
                 {!listThuPhi || listThuPhi.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={7}
                       className="text-center py-10 text-gray-400 italic"
                     >
                       Chưa có phiếu thu nào. Hãy thử tạo mới!
@@ -122,14 +120,13 @@ export default function ThuPhiPage() {
                         )
                       : 0;
 
-                    // LƯU Ý: Đã thay motion.tr thành tr thường để tránh lỗi ẩn dòng
                     return (
                       <tr
                         key={item._id || index}
                         className="hover:bg-blue-50 transition-colors duration-200"
                       >
                         <td className="p-4 pl-6 font-mono text-sm text-gray-400">
-                          #{item._id?.toString().slice(-6).toUpperCase()}
+                          #{item.maPhieuThu?.slice(-6).toUpperCase() || item._id?.toString().slice(-6).toUpperCase()}
                         </td>
 
                         <td className="p-4">
@@ -139,13 +136,10 @@ export default function ThuPhiPage() {
                             </div>
                             <div>
                               <p className="font-medium text-gray-700">
-                                {item.hoKhauId?.chuHo?.hoTen ||
-                                  item.hoKhauId?.maHoKhau ||
-                                  "Hộ khẩu không xác định"}
+                                {item.tenChuHo || item.hoKhauId?.chuHo?.hoTen || "Chưa xác định"}
                               </p>
                               <p className="text-xs text-gray-500">
-                                {item.hoKhauId?.diaChiThuongTru?.soNha || ""}{" "}
-                                {item.hoKhauId?.diaChiThuongTru?.duong || ""}
+                                {item.diaChi || item.hoKhauId?.diaChiThuongTru?.soNha || ""}
                               </p>
                             </div>
                           </div>
@@ -165,9 +159,10 @@ export default function ThuPhiPage() {
                             {item.chiTietThu?.map((ct: any, idx: number) => (
                               <span
                                 key={idx}
-                                className="px-2 py-1 bg-gray-100 text-gray-600 text-[10px] rounded border border-gray-200"
+                                className="px-2 py-1 bg-gray-100 text-gray-600 text-[10px] rounded border border-gray-200 truncate max-w-[150px]"
+                                title={ct.tenKhoanThu}
                               >
-                                {ct.khoanThuId?.tenKhoanThu || "Khoản thu"}
+                                {ct.tenKhoanThu || "Khoản thu"}
                               </span>
                             ))}
                           </div>
@@ -178,6 +173,32 @@ export default function ThuPhiPage() {
                             {total.toLocaleString("vi-VN")} đ
                           </span>
                         </td>
+
+                        {/* 👇 CỘT NGÀY THU */}
+                        <td className="p-4 text-right text-sm text-gray-600">
+                            {item.ngayThu ? (
+                                <div className="flex items-center justify-end gap-2">
+                                    {new Date(item.ngayThu).toLocaleDateString("vi-VN")}
+                                    <Calendar size={14} className="text-gray-400" />
+                                </div>
+                            ) : (
+                                <span className="text-gray-300">--/--/----</span>
+                            )}
+                        </td>
+
+                        {/* 👇 CỘT TRẠNG THÁI */}
+                        <td className="p-4 text-right">
+                            {item.trangThai === "Đã thu" ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-50 text-green-700 text-xs font-bold border border-green-200">
+                                    <CheckCircle size={12} /> Đã thu
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-yellow-50 text-yellow-700 text-xs font-bold border border-yellow-200">
+                                    <Clock size={12} /> Chờ thu
+                                </span>
+                            )}
+                        </td>
+
                       </tr>
                     );
                   })
