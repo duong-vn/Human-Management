@@ -30,7 +30,7 @@ import {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('thu-phi')
 export class ThuPhiController {
-  constructor(private readonly thuPhiService: ThuPhiService) {}
+  constructor(private readonly thuPhiService: ThuPhiService) { }
 
   @Post()
   @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO, UserRole.KE_TOAN)
@@ -263,7 +263,7 @@ export class ThuPhiController {
     return this.thuPhiService.thongKeTongQuan(parseInt(nam));
   }
 
-  @Get('ke-toan/dot-thu/:nam')
+  @Get('ke-toan/dot-thu/nam/:nam')
   @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO, UserRole.KE_TOAN)
   @ApiOperation({
     summary: 'Danh sách các đợt thu trong năm',
