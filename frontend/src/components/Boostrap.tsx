@@ -1,10 +1,17 @@
 "use client";
-import { clearUser, getUser, setAT, setUserFromToken } from "@/lib/AuthToken";
-import api from "@/lib/axios";
 import { useEffect, useState } from "react";
+import api from "@/lib/axios"; // Đường dẫn axios của bạn
+import {
+  getAT,
+  setAT,
+  setUserFromToken,
+  clearUser,
+  getUser,
+} from "@/lib/AuthToken"; // Import các hàm này từ file AuthToken
 
-export default function Boostrap({ children }: { children: React.ReactNode }) {
+export default function Bootstrap({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
+
   useEffect(() => {
     let mounted = true;
 
@@ -39,7 +46,9 @@ export default function Boostrap({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (!ready) {
-    return null;
+    // Bạn có thể return một cái loading spinner xoay xoay ở đây cho đẹp thay vì null
+    return <div className="p-10 text-center">Đang tải ứng dụng...</div>;
   }
+
   return <>{children}</>;
 }
