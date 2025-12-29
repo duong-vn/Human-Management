@@ -23,6 +23,11 @@ const menuItems = [
     icon: HomeIcon,
   },
   {
+    title: "User",
+    href: "/user",
+    icon: HomeIcon,
+  },
+  {
     title: "Quản lý hộ khẩu",
     href: "/ho-khau",
     icon: UserGroupIcon,

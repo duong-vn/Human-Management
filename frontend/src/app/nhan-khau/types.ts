@@ -1,3 +1,10 @@
+export interface SoDinhDanh {
+  loai: 'CMND' | 'CCCD';
+  so: string;
+  ngayCap?: string;
+  noiCap?: string;
+}
+
 export interface NhanKhau {
   id?: string; // Backend trả về _id, nhưng FE có thể dùng id
   hoTen: string;
@@ -7,12 +14,7 @@ export interface NhanKhau {
   gioiTinh: string;
 
   // QUAN TRỌNG: Đây phải là object
-  soDinhDanh: {
-    loai: string;
-    so: string;
-    ngayCap?: string;
-    noiCap?: string;
-  };
+  soDinhDanh: SoDinhDanh;
 
   // QUAN TRỌNG: Phải đúng chính tả Enum của backend
   trangThai: 'Thường trú' | 'Tạm trú' | 'Tạm vắng' | 'Đã chuyển đi' | 'Đã qua đời';

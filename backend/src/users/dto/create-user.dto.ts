@@ -5,8 +5,11 @@ import {
   MinLength,
   IsOptional,
   IsEnum,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { UserRole } from '../schemas/user.schema';
+import { SoDinhDanh } from 'src/nhan-khau/dto/create-nhan-khau.dto';
 
 export class CreateUserDto {
   @IsNotEmpty({ message: 'Họ tên không được để trống' })
@@ -34,4 +37,9 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   soDienThoai?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SoDinhDanh)
+  soDinhDanh?: SoDinhDanh;
 }
