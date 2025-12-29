@@ -303,7 +303,9 @@ export default function HoKhauDetailModal({
                 Lịch sử
               </button>
               <button
-                onClick={onEdit}
+                onClick={() => {
+                  onEdit();
+                }}
                 className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition text-sm font-medium"
               >
                 <Edit size={16} />

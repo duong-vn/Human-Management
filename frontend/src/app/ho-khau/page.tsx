@@ -30,6 +30,8 @@ import {
   xoaThanhVien,
   getLichSuHoKhau,
   getAllNhanKhau,
+  findNhanKhauByCCCD,
+  capNhatQuanHeThanhVien,
 } from "./api";
 import {
   HoKhau,
@@ -76,7 +78,7 @@ export default function HoKhauPage() {
 
   // States cho filter/search
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterTrangThai, setFilterTrangThai] = useState("");
+  const [filterTrangThai, setFilterTrangThai] = useState("Đang hoạt động");
 
   // --- QUERIES ---
   const {
@@ -209,13 +211,40 @@ export default function HoKhauPage() {
       toast.error("Lỗi: " + (err.response?.data?.message || err.message)),
   });
 
+  const capNhatQuanHeMutation = useMutation({
+    mutationFn: ({
+      hoKhauId,
+      nhanKhauId,
+      quanHeVoiChuHo,
+    }: {
+      hoKhauId: string;
+      nhanKhauId: string;
+      quanHeVoiChuHo: string;
+    }) => capNhatQuanHeThanhVien(hoKhauId, nhanKhauId, quanHeVoiChuHo),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ho-khau"] });
+      toast.success("Cập nhật quan hệ thành công!");
+      if (editingHoKhau) {
+        refreshSelectedHoKhau(editingHoKhau._id || editingHoKhau.id || "").then(
+          (updated) => {
+            if (updated) setEditingHoKhau(updated as HoKhau);
+          }
+        );
+      }
+    },
+    onError: (err: any) =>
+      toast.error("Lỗi: " + (err.response?.data?.message || err.message)),
+  });
+
   // --- HELPER FUNCTIONS ---
   const refreshSelectedHoKhau = async (id: string) => {
     try {
       const updated = await getHoKhauById(id);
       setSelectedHoKhau(updated);
+      return updated;
     } catch {
       // Ignore
+      return null;
     }
   };
 
@@ -237,6 +266,7 @@ export default function HoKhauPage() {
 
   const handleOpenEdit = () => {
     setEditingHoKhau(selectedHoKhau);
+    setIsDetailModalOpen(false);
     setIsFormModalOpen(true);
   };
 
@@ -260,6 +290,12 @@ export default function HoKhauPage() {
   const handleXoaThanhVien = (nhanKhauId: string, hoTen: string) => {
     setXoaThanhVienData({ nhanKhauId, hoTen });
     setIsXoaThanhVienModalOpen(true);
+  };
+
+  const handleUpdateQuanHe = (nhanKhauId: string, quanHeVoiChuHo: string) => {
+    if (!editingHoKhau) return;
+    const hoKhauId = editingHoKhau._id || editingHoKhau.id || "";
+    capNhatQuanHeMutation.mutate({ hoKhauId, nhanKhauId, quanHeVoiChuHo });
   };
 
   // --- SUBMIT HANDLERS ---
@@ -570,6 +606,7 @@ export default function HoKhauPage() {
           setEditingHoKhau(null);
         }}
         onSubmit={handleSubmitForm}
+        onUpdateQuanHe={handleUpdateQuanHe}
         initialData={editingHoKhau}
         nhanKhauList={nhanKhauList}
         isLoading={createMutation.isPending || updateMutation.isPending}
@@ -593,6 +630,7 @@ export default function HoKhauPage() {
         isOpen={isThemThanhVienModalOpen}
         onClose={() => setIsThemThanhVienModalOpen(false)}
         onSubmit={handleSubmitThemThanhVien}
+        onSearchByCCCD={findNhanKhauByCCCD}
         nhanKhauList={nhanKhauList}
         currentThanhVienIds={getCurrentThanhVienIds()}
         isLoading={themThanhVienMutation.isPending}
