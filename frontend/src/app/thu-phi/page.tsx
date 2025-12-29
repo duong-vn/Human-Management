@@ -21,7 +21,8 @@ import {
   X,
   Trash2,
   Plus,
-  Calendar
+  Calendar,
+  AlertTriangle
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -42,7 +43,7 @@ export default function QuanLyThuPhi() {
 
   const [detailModal, setDetailModal] = useState<{
     isOpen: boolean;
-    type: "bat-buoc" | "tu-nguyen" | null;
+    type: "bat-buoc" | "tu-nguyen" | "dang-no" | null;
     title: string;
     data: any[];
   }>({
@@ -52,6 +53,7 @@ export default function QuanLyThuPhi() {
     data: [],
   });
 
+  // 1. DATA FETCHING
   const { data: listBatBuocDef = [] } = useQuery({
     queryKey: ["khoan-thu-bat-buoc"],
     queryFn: async () => {
@@ -76,6 +78,7 @@ export default function QuanLyThuPhi() {
     },
   });
 
+  // 2. MUTATIONS
   const createKhoanThuMutation = useMutation({
     mutationFn: async (payload: any) => await createKhoanThu(payload),
     onSuccess: () => {
@@ -99,6 +102,7 @@ export default function QuanLyThuPhi() {
     }
   });
 
+  // 3. HANDLERS
   const handleDeletePhieu = (phieu: any) => {
       const id = phieu._id || phieu.id;
       toast("Xác nhận xóa phiếu thu?", {
@@ -109,7 +113,7 @@ export default function QuanLyThuPhi() {
           },
           cancel: {
               label: "Hủy",
-              onClick: () => {} // 🟢 SỬA LỖI: Thêm onClick trống
+              onClick: () => {}
           },
           duration: 5000
       });
@@ -132,27 +136,33 @@ export default function QuanLyThuPhi() {
     });
   };
 
+  // 4. LOGIC THỐNG KÊ (Đã sửa để bóc tách chi tiết từng khoản trong phiếu gộp)
   const stats = useMemo(() => {
     let totalBatBuoc = 0;
     let totalTuNguyen = 0;
+    let totalDangNo = 0;
     const listDetailBatBuoc: any[] = [];
     const listDetailTuNguyen: any[] = [];
+    const listDetailDangNo: any[] = [];
+
     const batBuocIds = new Set(listBatBuocDef.map((k: any) => k._id || k.id));
     const tuNguyenIds = new Set(listTuNguyenDef.map((k: any) => k._id || k.id));
+
     dsPhieuThu.forEach((pt: any) => {
-        // 🟢 FIX: So sánh với "Đã thu" để khớp Enum của Backend
-        if (pt.trangThai === "Đã thu") {
-            pt.chiTietThu?.forEach((detail: any) => {
-                const amount = Number(detail.soTien) || 0;
-                const kId = detail.khoanThuId;
-                const detailItem = {
-                    maPhieu: pt.maPhieuThu,
-                    tenChuHo: pt.tenChuHo,
-                    tenKhoanThu: detail.tenKhoanThu,
-                    ngayThu: pt.ngayThu,
-                    soTien: amount,
-                    ghiChu: detail.ghiChu
-                };
+        pt.chiTietThu?.forEach((detail: any) => {
+            const amount = Number(detail.soTien) || 0;
+            const kId = detail.khoanThuId;
+            const detailItem = {
+                maPhieu: pt.maPhieuThu,
+                tenChuHo: pt.tenChuHo,
+                tenKhoanThu: detail.tenKhoanThu,
+                ngayThu: pt.ngayThu,
+                soTien: amount,
+                ghiChu: detail.ghiChu
+            };
+
+            // Phân loại theo trạng thái của phiếu tổng
+            if (pt.trangThai === "Đã thu") {
                 if (batBuocIds.has(kId)) {
                     totalBatBuoc += amount;
                     listDetailBatBuoc.push(detailItem);
@@ -160,21 +170,37 @@ export default function QuanLyThuPhi() {
                     totalTuNguyen += amount;
                     listDetailTuNguyen.push(detailItem);
                 }
-            });
-        }
+            } else if (pt.trangThai === "Chưa thu") {
+                totalDangNo += amount;
+                listDetailDangNo.push(detailItem);
+            }
+        });
     });
+
     listDetailBatBuoc.sort((a, b) => new Date(b.ngayThu).getTime() - new Date(a.ngayThu).getTime());
     listDetailTuNguyen.sort((a, b) => new Date(b.ngayThu).getTime() - new Date(a.ngayThu).getTime());
-    return { totalBatBuoc, totalTuNguyen, listDetailBatBuoc, listDetailTuNguyen };
+    listDetailDangNo.sort((a, b) => new Date(b.ngayThu).getTime() - new Date(a.ngayThu).getTime());
+
+    return { totalBatBuoc, totalTuNguyen, totalDangNo, listDetailBatBuoc, listDetailTuNguyen, listDetailDangNo };
   }, [dsPhieuThu, listBatBuocDef, listTuNguyenDef]);
 
+  const openModal = (type: "bat-buoc" | "tu-nguyen" | "dang-no") => {
+      const titles = {
+          "bat-buoc": "Chi tiết thu Phí Bắt Buộc",
+          "tu-nguyen": "Chi tiết thu Đóng Góp / Ủng Hộ",
+          "dang-no": "Chi tiết các khoản đang nợ"
+      };
+      const datas = {
+          "bat-buoc": stats.listDetailBatBuoc,
+          "tu-nguyen": stats.listDetailTuNguyen,
+          "dang-no": stats.listDetailDangNo
+      };
 
-  const openModal = (type: "bat-buoc" | "tu-nguyen") => {
       setDetailModal({
           isOpen: true,
-          type,
-          title: type === "bat-buoc" ? "Chi tiết thu Phí Bắt Buộc" : "Chi tiết thu Đóng Góp / Ủng Hộ",
-          data: type === "bat-buoc" ? stats.listDetailBatBuoc : stats.listDetailTuNguyen
+          type: type as any,
+          title: titles[type],
+          data: datas[type]
       });
   };
 
@@ -182,13 +208,11 @@ export default function QuanLyThuPhi() {
     const term = searchTerm.toLowerCase();
     const matchName = item.tenChuHo?.toLowerCase().includes(term);
     const matchKy = item.kyThu?.toLowerCase().includes(term);
-    const matchMonth = filterMonth ? item.kyThu?.includes(filterMonth) : true;
-    return (matchName || matchKy) && matchMonth;
+    return (matchName || matchKy);
   });
 
   return (
     <div className="p-8 bg-gray-50 min-h-screen space-y-8">
-
       {/* HEADER */}
       <div className="flex justify-between items-center">
         <div>
@@ -212,43 +236,52 @@ export default function QuanLyThuPhi() {
       </div>
 
       {/* STATS CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden group">
               <div className="flex justify-between items-start z-10">
                   <div>
-                      <p className="text-gray-500 text-sm font-semibold uppercase mb-1">Tổng thu Phí Bắt Buộc</p>
-                      <h3 className="text-3xl font-bold text-blue-600">{stats.totalBatBuoc.toLocaleString()} ₫</h3>
-                      <p className="text-xs text-gray-400 mt-2 flex items-center gap-1"><TrendingUp size={14} className="text-green-500"/> {stats.listDetailBatBuoc.length} giao dịch thành công</p>
+                      <p className="text-gray-500 text-sm font-semibold uppercase mb-1">Thực thu Phí Cố Định</p>
+                      <h3 className="text-2xl font-bold text-blue-600">{stats.totalBatBuoc.toLocaleString()} ₫</h3>
                   </div>
-                  <div className="p-4 bg-blue-50 rounded-full text-blue-600"><Wallet size={32} /></div>
+                  <div className="p-3 bg-blue-50 rounded-full text-blue-600"><Wallet size={24} /></div>
               </div>
               <div className="mt-4 pt-4 border-t border-gray-100 z-10">
-                  <button onClick={() => openModal("bat-buoc")} className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"><Eye size={16}/> Xem chi tiết nguồn thu</button>
+                  <button onClick={() => openModal("bat-buoc")} className="flex items-center gap-2 text-xs font-medium text-blue-600 hover:underline"><Eye size={14}/> Xem chi tiết</button>
               </div>
-              <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-blue-50 rounded-full opacity-50 group-hover:scale-110 transition-transform"/>
           </div>
 
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden group">
               <div className="flex justify-between items-start z-10">
                   <div>
-                      <p className="text-gray-500 text-sm font-semibold uppercase mb-1">Tổng thu Đóng Góp / Ủng Hộ</p>
-                      <h3 className="text-3xl font-bold text-red-500">{stats.totalTuNguyen.toLocaleString()} ₫</h3>
-                      <p className="text-xs text-gray-400 mt-2 flex items-center gap-1"><Heart size={14} className="text-red-500"/> {stats.listDetailTuNguyen.length} lượt quyên góp</p>
+                      <p className="text-gray-500 text-sm font-semibold uppercase mb-1">Thực thu Đóng Góp</p>
+                      <h3 className="text-2xl font-bold text-rose-500">{stats.totalTuNguyen.toLocaleString()} ₫</h3>
                   </div>
-                  <div className="p-4 bg-red-50 rounded-full text-red-500"><Heart size={32} /></div>
+                  <div className="p-3 bg-rose-50 rounded-full text-rose-500"><Heart size={24} /></div>
               </div>
               <div className="mt-4 pt-4 border-t border-gray-100 z-10">
-                  <button onClick={() => openModal("tu-nguyen")} className="flex items-center gap-2 text-sm font-medium text-red-600 hover:text-red-800 hover:underline"><Eye size={16}/> Xem chi tiết nguồn thu</button>
+                  <button onClick={() => openModal("tu-nguyen")} className="flex items-center gap-2 text-xs font-medium text-rose-600 hover:underline"><Eye size={14}/> Xem chi tiết</button>
               </div>
-               <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-red-50 rounded-full opacity-50 group-hover:scale-110 transition-transform"/>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden group">
+              <div className="flex justify-between items-start z-10">
+                  <div>
+                      <p className="text-gray-500 text-sm font-semibold uppercase mb-1">Tổng nợ (Chưa thu)</p>
+                      <h3 className="text-2xl font-bold text-orange-500">{stats.totalDangNo.toLocaleString()} ₫</h3>
+                  </div>
+                  <div className="p-3 bg-orange-50 rounded-full text-orange-500"><Clock size={24} /></div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-gray-100 z-10">
+                  <button onClick={() => openModal("dang-no")} className="flex items-center gap-2 text-xs font-medium text-orange-600 hover:underline"><Eye size={14}/> Xem danh sách nợ</button>
+              </div>
           </div>
       </div>
 
-      {/* SEARCH & FILTER */}
+      {/* SEARCH */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex gap-4">
          <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/>
-            <input placeholder="Tìm kiếm phiếu thu..." className="w-full pl-10 pr-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            <input placeholder="Tìm kiếm phiếu thu theo tên chủ hộ hoặc kỳ thu..." className="w-full pl-10 pr-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
          </div>
       </div>
 
@@ -259,9 +292,9 @@ export default function QuanLyThuPhi() {
             <thead className="bg-gray-50 border-b border-gray-100 text-xs text-gray-500 uppercase font-semibold">
                 <tr>
                     <th className="p-4">Mã Phiếu</th>
-                    <th className="p-4">Hộ Khẩu / Chủ Hộ</th>
+                    <th className="p-4">Chủ Hộ</th>
                     <th className="p-4">Kỳ Thu</th>
-                    <th className="p-4">Chi Tiết</th>
+                    <th className="p-4">Nội dung thu</th>
                     <th className="p-4 text-right">Tổng Tiền</th>
                     <th className="p-4">Ngày Thu</th>
                     <th className="p-4 text-center">Trạng Thái</th>
@@ -269,23 +302,34 @@ export default function QuanLyThuPhi() {
                 </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm">
-                {filteredData.map((item: any) => (
+                {filteredData.length === 0 ? (
+                    <tr><td colSpan={8} className="p-8 text-center text-gray-400">Không tìm thấy phiếu thu nào</td></tr>
+                ) : filteredData.map((item: any) => (
                     <tr key={item._id || item.id} className="hover:bg-gray-50 transition-colors group">
-                        <td className="p-4 text-gray-400 font-mono">#{ (item.maPhieuThu || item._id).slice(-6).toUpperCase() }</td>
-                        <td className="p-4"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center"><User size={14}/></div><span className="font-medium text-gray-700">{item.tenChuHo}</span></div></td>
+                        <td className="p-4 text-gray-400 font-mono text-xs">#{ (item.maPhieuThu || item._id).slice(-8).toUpperCase() }</td>
+                        <td className="p-4"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs">{item.tenChuHo?.charAt(0)}</div><span className="font-medium text-gray-700">{item.tenChuHo}</span></div></td>
                         <td className="p-4 text-gray-600">{item.kyThu}</td>
-                        <td className="p-4"><div className="flex flex-wrap gap-1">{item.chiTietThu?.map((ct: any, idx: number) => (<span key={idx} className="px-2 py-0.5 bg-gray-100 border rounded text-xs text-gray-600 truncate max-w-[150px]">{ct.tenKhoanThu}</span>))}</div></td>
-                        <td className="p-4 text-right font-bold text-green-600">{Number(item.tongTien).toLocaleString()} ₫</td>
+                        <td className="p-4">
+                            <div className="flex flex-wrap gap-1">
+                                {item.chiTietThu?.map((ct: any, idx: number) => (
+                                    <span key={idx} className="px-2 py-0.5 bg-gray-100 border rounded text-[10px] text-gray-600 truncate max-w-[120px]">
+                                        {ct.tenKhoanThu}
+                                    </span>
+                                ))}
+                            </div>
+                        </td>
+                        <td className={`p-4 text-right font-bold ${item.trangThai === "Đã thu" ? "text-green-600" : "text-orange-500"}`}>
+                            {Number(item.tongTien).toLocaleString()} ₫
+                        </td>
                         <td className="p-4 text-gray-500">{new Date(item.ngayThu).toLocaleDateString("vi-VN")}</td>
 
                         <td className="p-4 text-center">
-                            {/* 🟢 FIX: Hiển thị nhãn "Đã nộp" nhưng so khớp với data "Đã thu" */}
                             {item.trangThai === "Đã thu" ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 rounded-full text-xs font-bold border border-green-200">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 rounded-full text-[10px] font-bold border border-green-200">
                                     <CheckCircle size={12}/> Đã nộp
                                 </span>
                             ) : (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-yellow-50 text-yellow-700 rounded-full text-xs font-bold border border-yellow-200">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-700 rounded-full text-[10px] font-bold border border-orange-200">
                                     <Clock size={12}/> Chưa nộp
                                 </span>
                             )}
@@ -300,13 +344,13 @@ export default function QuanLyThuPhi() {
         </div>
       </div>
 
-      {/* MODAL THÊM KHOẢN THU MỚI */}
+      {/* MODAL THÊM KHOẢN THU */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 animate-in zoom-in-95">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold">Thêm {addType === "Bắt buộc" ? "Phí Cố Định" : "Quỹ Đóng Góp"}</h3>
-              <button onClick={() => setIsAddModalOpen(false)} className="p-1 hover:bg-gray-100 rounded-full transition-colors"><X size={24}/></button>
+              <button onClick={() => setIsAddModalOpen(false)} className="p-1 hover:bg-gray-100 rounded-full"><X size={24}/></button>
             </div>
             <div className="space-y-4">
               <div>
@@ -324,8 +368,8 @@ export default function QuanLyThuPhi() {
                 </div>
               )}
               <div className="flex gap-3 pt-4">
-                <button onClick={() => setIsAddModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold hover:bg-gray-200 transition-colors">Hủy</button>
-                <button onClick={handleConfirmAdd} disabled={createKhoanThuMutation.isPending} className={`flex-1 py-2 text-white rounded-lg font-bold transition-all active:scale-95 ${addType === "Bắt buộc" ? "bg-blue-600 hover:bg-blue-700" : "bg-rose-500 hover:bg-rose-600"}`}>
+                <button onClick={() => setIsAddModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold">Hủy</button>
+                <button onClick={handleConfirmAdd} disabled={createKhoanThuMutation.isPending} className={`flex-1 py-2 text-white rounded-lg font-bold ${addType === "Bắt buộc" ? "bg-blue-600" : "bg-rose-500"}`}>
                   {createKhoanThuMutation.isPending ? "Đang tạo..." : "Xác nhận"}
                 </button>
               </div>
@@ -336,31 +380,28 @@ export default function QuanLyThuPhi() {
 
       {/* DETAIL MODAL */}
       {detailModal.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95">
-                <div className={`px-6 py-4 border-b flex justify-between items-center ${detailModal.type === "bat-buoc" ? "bg-blue-50" : "bg-red-50"} rounded-t-2xl`}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+                <div className={`px-6 py-4 border-b flex justify-between items-center ${detailModal.type === "bat-buoc" ? "bg-blue-50" : detailModal.type === "dang-no" ? "bg-orange-50" : "bg-rose-50"} rounded-t-2xl`}>
                     <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-full ${detailModal.type === "bat-buoc" ? "bg-blue-100 text-blue-600" : "bg-red-100 text-red-600"}`}><Wallet size={20}/></div>
-                        <div>
-                            <h3 className="text-lg font-bold text-gray-800">{detailModal.title}</h3>
-                            <p className="text-sm text-gray-500">{detailModal.data.length} giao dịch</p>
-                        </div>
+                        <h3 className="text-lg font-bold text-gray-800">{detailModal.title}</h3>
+                        <span className="px-2 py-0.5 bg-white rounded-full text-xs font-bold text-gray-500">{detailModal.data.length} mục</span>
                     </div>
-                    <button onClick={() => setDetailModal(prev => ({ ...prev, isOpen: false }))} className="p-2 hover:bg-white/50 rounded-full transition-colors"><X size={24} className="text-gray-500"/></button>
+                    <button onClick={() => setDetailModal(prev => ({ ...prev, isOpen: false }))} className="p-2 hover:bg-white/50 rounded-full"><X size={24}/></button>
                 </div>
                 <div className="overflow-y-auto p-6">
-                    <table className="w-full text-left text-sm">
-                        <thead className="bg-gray-100 text-gray-500 font-semibold uppercase text-xs">
-                            <tr><th className="p-3">Ngày thu</th><th className="p-3">Hộ nộp tiền</th><th className="p-3">Khoản thu</th><th className="p-3 text-right">Số tiền</th><th className="p-3">Ghi chú</th></tr>
+                    <table className="w-full text-left text-xs">
+                        <thead className="bg-gray-100 text-gray-500 font-semibold uppercase">
+                            <tr><th className="p-3">Ngày</th><th className="p-3">Chủ hộ</th><th className="p-3">Khoản thu</th><th className="p-3 text-right">Số tiền</th><th className="p-3 text-center">Ghi chú</th></tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {detailModal.data.length === 0 ? (<tr><td colSpan={5} className="p-8 text-center text-gray-400">Chưa có dữ liệu.</td></tr>) : detailModal.data.map((row: any, idx: number) => (
+                            {detailModal.data.map((row: any, idx: number) => (
                                 <tr key={idx} className="hover:bg-gray-50">
-                                    <td className="p-3 text-gray-500 font-mono">{new Date(row.ngayThu).toLocaleDateString("vi-VN")}</td>
+                                    <td className="p-3 text-gray-500">{new Date(row.ngayThu).toLocaleDateString("vi-VN")}</td>
                                     <td className="p-3 font-medium text-gray-800">{row.tenChuHo}</td>
-                                    <td className="p-3 text-gray-600"><span className={`inline-block px-2 py-0.5 rounded text-xs border ${detailModal.type === "bat-buoc" ? "bg-blue-50 border-blue-100 text-blue-700" : "bg-red-50 border-red-100 text-red-700"}`}>{row.tenKhoanThu}</span></td>
-                                    <td className="p-3 text-right font-bold text-gray-800">{row.soTien.toLocaleString()} ₫</td>
-                                    <td className="p-3 text-gray-400 text-xs italic truncate max-w-[150px]">{row.ghiChu || "-"}</td>
+                                    <td className="p-3 text-gray-600">{row.tenKhoanThu}</td>
+                                    <td className="p-3 text-right font-bold">{row.soTien.toLocaleString()} ₫</td>
+                                    <td className="p-3 text-gray-400 italic text-center">{row.ghiChu || "-"}</td>
                                 </tr>
                             ))}
                         </tbody>
