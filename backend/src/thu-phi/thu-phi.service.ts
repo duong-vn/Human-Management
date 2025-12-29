@@ -9,7 +9,7 @@ import { ThuPhi, ThuPhiDocument } from './schemas/thu-phi.schema';
 export class ThuPhiService {
   constructor(
     @InjectModel(ThuPhi.name) private thuPhiModel: Model<ThuPhiDocument>,
-  ) {}
+  ) { }
 
   async create(
     createThuPhiDto: CreateThuPhiDto,
