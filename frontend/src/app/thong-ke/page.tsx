@@ -47,13 +47,31 @@ export default function ThongKePage() {
     setChiTietLoading(false);
   };
 
-  const openHoDetails = async (hoKhauId: string) => {
+  const openHoDetails = async (hoKhauId?: string | null) => {
     setLichSuLoading(true);
+    setError(null);
+    // Guard: do not call backend with null/undefined id (causes 500)
+    if (!hoKhauId) {
+      setSelectedHo(null);
+      setLichSuHo(null);
+      setLichSuLoading(false);
+      setError('Không có mã hộ khẩu cho phiếu thu này.');
+      return;
+    }
+
     setSelectedHo(hoKhauId);
     const data = await getLichSuHo(hoKhauId, nam);
     console.log('getLichSuHo response:', data);
     setLichSuHo(data || null);
     setLichSuLoading(false);
+  };
+
+  // Helper to format numbers as VND
+  const formatVND = (v: any) => {
+    if (v == null) return '0';
+    if (typeof v === 'number') return v.toLocaleString?.('vi-VN') ?? String(v);
+    const n = Number(v);
+    return isNaN(n) ? String(v) : n.toLocaleString('vi-VN');
   };
 
   return (
@@ -160,8 +178,36 @@ export default function ThongKePage() {
         <div className="mt-4 border p-4 rounded">
           <h3 className="font-medium mb-3">Lịch sử nộp tiền hộ: {selectedHo}</h3>
           <div className="mt-2">
-            <div className="font-semibold text-green-600">Tổng đã nộp: {lichSuHo.tongKet?.daNop?.toLocaleString?.('vi-VN') ?? 0} đ</div>
-            <div className="font-semibold text-red-600">Còn nợ: {lichSuHo.tongKet?.conNo?.toLocaleString?.('vi-VN') ?? 0} đ</div>
+            {/* Compute totals from phiếu list */}
+            {(() => {
+              const danhSach = Array.isArray(lichSuHo.danhSachPhieuThu) ? lichSuHo.danhSachPhieuThu : [];
+
+              // Calculate paid (Đã thu) and unpaid (Chưa thu, Đang nợ) from actual phiếu
+              const computedDaNop = danhSach
+                .filter((pt: any) => pt?.trangThai === 'Đã thu')
+                .reduce((s: number, pt: any) => {
+                  const v = pt?.tongTien ?? 0;
+                  return s + (typeof v === 'number' ? v : Number(v) || 0);
+                }, 0);
+
+              const computedConNo = danhSach
+                .filter((pt: any) => pt?.trangThai !== 'Đã thu')
+                .reduce((s: number, pt: any) => {
+                  const v = pt?.tongTien ?? 0;
+                  return s + (typeof v === 'number' ? v : Number(v) || 0);
+                }, 0);
+
+              // Use backend data if available, otherwise use computed values
+              const daNop = lichSuHo.tongKet?.daNop ?? computedDaNop;
+              const conNo = lichSuHo.tongKet?.conNo ?? computedConNo;
+
+              return (
+                <>
+                  <div className="font-semibold text-green-600">Tổng đã nộp: {formatVND(daNop)} đ</div>
+                  <div className="font-semibold text-red-600">Còn nợ: {formatVND(conNo)} đ</div>
+                </>
+              );
+            })()}
           </div>
           <div className="mt-3">
             <h4 className="font-semibold">Danh sách phiếu thu</h4>
