@@ -89,8 +89,8 @@ export default function QuanLyCacKhoanThu() {
     const filterredPhieu = dsPhieuThu.filter((pt: any) => {
       const ptHoKhauId = getCleanId(pt.hoKhauId);
       return ptHoKhauId === hkId &&
-             pt.kyThu === kyThuLabel &&
-             pt.chiTietThu?.some((ct: any) => getCleanId(ct.khoanThuId) === ktId);
+        pt.kyThu === kyThuLabel &&
+        pt.chiTietThu?.some((ct: any) => getCleanId(ct.khoanThuId) === ktId);
     });
 
     if (filterredPhieu.length === 0) return "none";
@@ -148,14 +148,14 @@ export default function QuanLyCacKhoanThu() {
 
     if (status === "Đã thu") {
       toast(`Xác nhận nộp phí?`, {
-        description: `Khoản: ${activeKhoanThu.tenKhoanThu} - Hộ: ${hoKhau.chuHo?.hoTen}. Số tiền: ${Number(tongTien).toLocaleString()} VNĐ`,
+        description: `Khoản: ${activeKhoanThu.tenKhoanThu} - Hộ: ${hoKhau.chuHo?.hoTen}. Số tiền: ${Number(tongTien).toLocaleString()} đ`,
         action: {
           label: "Xác nhận",
           onClick: () => thuPhiMutation.mutate(payload),
         },
         cancel: {
           label: "Hủy",
-          onClick: () => {},
+          onClick: () => { },
         },
       });
     } else {
@@ -167,130 +167,129 @@ export default function QuanLyCacKhoanThu() {
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-6 border-b border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                <Layers className="text-blue-600"/> Danh Mục Phí
-            </h2>
-            <p className="text-xs text-gray-500 mt-1">Chọn khoản thu để xem trạng thái</p>
+          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <Layers className="text-blue-600" /> Danh Mục Phí
+          </h2>
+          <p className="text-xs text-gray-500 mt-1">Chọn khoản thu để xem trạng thái</p>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            {isLoadingKhoanThu ? (
-                <div className="text-center py-4 text-gray-400">Đang tải...</div>
-            ) : dsKhoanThu.map((kt: any) => {
-                const isActive = activeKhoanThu && getCleanId(activeKhoanThu) === getCleanId(kt);
-                return (
-                    <div
-                        key={getCleanId(kt)}
-                        onClick={() => setActiveKhoanThu(kt)}
-                        className={`group w-full p-4 rounded-xl transition-all border cursor-pointer relative ${
-                            isActive ? "bg-blue-50 border-blue-200 shadow-sm" : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200"
-                        }`}
-                    >
-                        <div className="flex justify-between items-start">
-                            <span className={`font-bold ${isActive ? "text-blue-700" : "text-gray-700"}`}>{kt.tenKhoanThu}</span>
-                            {isActive && <CheckCircle size={16} className="text-blue-600"/>}
-                        </div>
-                        <div className="mt-1 flex items-center gap-1 text-sm text-gray-500">
-                             {Number(kt.soTien).toLocaleString()} VNĐ
-                        </div>
-                    </div>
-                )
-            })}
+          {isLoadingKhoanThu ? (
+            <div className="text-center py-4 text-gray-400">Đang tải...</div>
+          ) : dsKhoanThu.map((kt: any) => {
+            const isActive = activeKhoanThu && getCleanId(activeKhoanThu) === getCleanId(kt);
+            return (
+              <div
+                key={getCleanId(kt)}
+                onClick={() => setActiveKhoanThu(kt)}
+                className={`group w-full p-4 rounded-xl transition-all border cursor-pointer relative ${isActive ? "bg-blue-50 border-blue-200 shadow-sm" : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-200"
+                  }`}
+              >
+                <div className="flex justify-between items-start">
+                  <span className={`font-bold ${isActive ? "text-blue-700" : "text-gray-700"}`}>{kt.tenKhoanThu}</span>
+                  {isActive && <CheckCircle size={16} className="text-blue-600" />}
+                </div>
+                <div className="mt-1 flex items-center gap-1 text-sm text-gray-500">
+                  <DollarSign size={14} /> {Number(kt.soTien).toLocaleString()} đ
+                </div>
+              </div>
+            )
+          })}
         </div>
       </div>
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <div className="p-8 pb-4 flex justify-between items-end">
-             <div>
-                <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    {activeKhoanThu ? activeKhoanThu.tenKhoanThu : "Quản lý thu phí"}
-                </h1>
-                <p className="text-gray-500 text-sm mt-1">Đang xem dữ liệu kỳ {selectedMonth}/{selectedYear}</p>
-             </div>
-             <div className="flex items-center gap-3 bg-white p-2 rounded-lg shadow-sm border">
-                <select value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))} className="outline-none font-medium text-gray-700 bg-transparent cursor-pointer">
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                    <option key={m} value={m}>Tháng {m}</option>
-                    ))}
-                </select>
-                <span className="text-gray-300">|</span>
-                <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))} className="outline-none font-medium text-gray-700 bg-transparent cursor-pointer px-2">
-                    <option value={2024}>2024</option>
-                    <option value={2025}>2025</option>
-                </select>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+              {activeKhoanThu ? activeKhoanThu.tenKhoanThu : "Quản lý thu phí"}
+            </h1>
+            <p className="text-gray-500 text-sm mt-1">Đang xem dữ liệu kỳ {selectedMonth}/{selectedYear}</p>
+          </div>
+          <div className="flex items-center gap-3 bg-white p-2 rounded-lg shadow-sm border">
+            <select value={selectedMonth} onChange={(e) => setSelectedMonth(Number(e.target.value))} className="outline-none font-medium text-gray-700 bg-transparent cursor-pointer">
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                <option key={m} value={m}>Tháng {m}</option>
+              ))}
+            </select>
+            <span className="text-gray-300">|</span>
+            <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))} className="outline-none font-medium text-gray-700 bg-transparent cursor-pointer px-2">
+              <option value={2024}>2024</option>
+              <option value={2025}>2025</option>
+            </select>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-8 pb-8">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                <thead className="bg-gray-50 border-b border-gray-100 sticky top-0 z-10">
-                    <tr>
-                    <th className="p-4 text-xs font-semibold text-gray-500 uppercase">Hộ Gia Đình</th>
-                    <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-center">Số NK</th>
-                    <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-right">Phải Nộp</th>
-                    <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-center">Trạng Thái</th>
-                    <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-center">Thao Tác</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                    {isLoadingHoKhau ? (
-                         <tr><td colSpan={5} className="p-8 text-center text-gray-400">Đang tải dữ liệu...</td></tr>
-                    ) : (
-                        dsHoKhau.map((hk: any) => {
-                            const hkId = getCleanId(hk);
-                            const soNK = (hk.thanhVien?.length || 0);
-                            const { tongTien } = calculateFee(hk);
-                            const currentStatus = getSinglePaymentStatus(hk);
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-gray-50 border-b border-gray-100 sticky top-0 z-10">
+                <tr>
+                  <th className="p-4 text-xs font-semibold text-gray-500 uppercase">Hộ Gia Đình</th>
+                  <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-center">Số NK</th>
+                  <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-right">Phải Nộp</th>
+                  <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-center">Trạng Thái</th>
+                  <th className="p-4 text-xs font-semibold text-gray-500 uppercase text-center">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {isLoadingHoKhau ? (
+                  <tr><td colSpan={5} className="p-8 text-center text-gray-400">Đang tải dữ liệu...</td></tr>
+                ) : (
+                  dsHoKhau.map((hk: any) => {
+                    const hkId = getCleanId(hk);
+                    const soNK = (hk.thanhVien?.length || 0);
+                    const { tongTien } = calculateFee(hk);
+                    const currentStatus = getSinglePaymentStatus(hk);
 
-                            return (
-                                <tr key={hkId} className={`transition-colors ${currentStatus === "Đã thu" ? "bg-green-50/20" : "hover:bg-gray-50"}`}>
-                                    <td className="p-4">
-                                        <div className="font-bold text-blue-600 text-sm">#{hkId.slice(-8).toUpperCase()}</div>
-                                        <div className="font-medium text-gray-800">{hk.chuHo?.hoTen}</div>
-                                        <div className="text-[10px] text-gray-400 truncate max-w-[200px]">{hk.diaChi?.soNha} {hk.diaChi?.duong}</div>
-                                    </td>
-                                    <td className="p-4 text-center">
-                                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 text-gray-600 font-bold text-xs">{soNK}</span>
-                                    </td>
-                                    <td className="p-4 text-right">
-                                        <div className="font-bold text-gray-700">{Number(tongTien).toLocaleString()} VNĐ</div>
-                                    </td>
-                                    <td className="p-4 text-center">
-                                        {currentStatus === "Đã thu" ? (
-                                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-bold">Đã nộp</span>
-                                        ) : currentStatus === "Chưa thu" ? (
-                                            <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-bold">Đang nợ</span>
-                                        ) : (
-                                            <span className="px-2 py-1 bg-gray-100 text-gray-400 rounded-lg text-xs">Chưa nộp</span>
-                                        )}
-                                    </td>
-                                    <td className="p-4 text-center">
-                                        {currentStatus === "Đã thu" ? (
-                                            <CheckCircle className="mx-auto text-green-500" size={20} />
-                                        ) : (
-                                            <div className="flex flex-col items-center gap-1">
-                                                <button
-                                                    onClick={() => handleThuPhiLe(hk, "Đã thu")}
-                                                    className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-1"
-                                                >
-                                                    Thu Tiền
-                                                </button>
-                                                <button
-                                                    onClick={() => handleThuPhiLe(hk, "Chưa thu")}
-                                                    className="text-[10px] text-gray-400 hover:text-red-500 font-medium"
-                                                >
-                                                    Ghi nhận nợ
-                                                </button>
-                                            </div>
-                                        )}
-                                    </td>
-                                </tr>
-                            );
-                        })
-                    )}
-                </tbody>
-                </table>
-            </div>
+                    return (
+                      <tr key={hkId} className={`transition-colors ${currentStatus === "Đã thu" ? "bg-green-50/20" : "hover:bg-gray-50"}`}>
+                        <td className="p-4">
+                          <div className="font-bold text-blue-600 text-sm">#{hkId.slice(-8).toUpperCase()}</div>
+                          <div className="font-medium text-gray-800">{hk.chuHo?.hoTen}</div>
+                          <div className="text-[10px] text-gray-400 truncate max-w-[200px]">{hk.diaChi?.soNha} {hk.diaChi?.duong}</div>
+                        </td>
+                        <td className="p-4 text-center">
+                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 text-gray-600 font-bold text-xs">{soNK}</span>
+                        </td>
+                        <td className="p-4 text-right">
+                          <div className="font-bold text-gray-700">{Number(tongTien).toLocaleString()} ₫</div>
+                        </td>
+                        <td className="p-4 text-center">
+                          {currentStatus === "Đã thu" ? (
+                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-bold">Đã nộp</span>
+                          ) : currentStatus === "Chưa thu" ? (
+                            <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-bold">Đang nợ</span>
+                          ) : (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-400 rounded-lg text-xs">Chưa nộp</span>
+                          )}
+                        </td>
+                        <td className="p-4 text-center">
+                          {currentStatus === "Đã thu" ? (
+                            <CheckCircle className="mx-auto text-green-500" size={20} />
+                          ) : (
+                            <div className="flex flex-col items-center gap-1">
+                              <button
+                                onClick={() => handleThuPhiLe(hk, "Đã thu")}
+                                className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-1"
+                              >
+                                Thu Tiền
+                              </button>
+                              <button
+                                onClick={() => handleThuPhiLe(hk, "Chưa thu")}
+                                className="text-[10px] text-gray-400 hover:text-red-500 font-medium"
+                              >
+                                Ghi nhận nợ
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

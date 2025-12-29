@@ -59,3 +59,15 @@ export const getLichSuHo = async (hoKhauId: string, nam?: number) => {
     return null;
   }
 };
+// Lấy chi tiết các hộ chưa nộp trong một đợt thu
+export const getChiTietHoChuaNop = async (kyThu: string, nam?: number) => {
+  try {
+    const encoded = encodeURIComponent(kyThu);
+    const url = nam ? `/thu-phi/ke-toan/dot-thu/${encoded}/chua-nop?nam=${nam}` : `/thu-phi/ke-toan/dot-thu/${encoded}/chua-nop`;
+    const res = await api.get(url);
+    return res.data;
+  } catch (error) {
+    console.error('Lỗi khi lấy chi tiết hộ chưa nộp:', error);
+    return null;
+  }
+};

@@ -50,6 +50,11 @@ const menuItems = [
   },
   // ----------------------------------
   {
+    title: "Quản lý phiếu thu",
+    href: "/phieu-thu",
+    icon: DocumentTextIcon,
+  },
+  {
     title: "Tạm trú tạm vắng",
     href: "/tam-tru-tam-vang",
     icon: DocumentTextIcon,
