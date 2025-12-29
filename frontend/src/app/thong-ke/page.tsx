@@ -394,118 +394,105 @@ export default function ThongKePage() {
           </div>
 
           {/* Summary Cards */}
-          {(() => {
-            const danhSach = Array.isArray(lichSuHo.danhSachPhieuThu) ? lichSuHo.danhSachPhieuThu : [];
-            const computedDaNop = danhSach
-              .filter((pt: any) => pt?.trangThai === 'Đã thu')
-              .reduce((s: number, pt: any) => {
-                const v = pt?.tongTien ?? 0;
-                return s + (typeof v === 'number' ? v : Number(v) || 0);
-              }, 0);
-            const computedConNo = danhSach
-              .filter((pt: any) => pt?.trangThai !== 'Đã thu')
-              .reduce((s: number, pt: any) => {
-                const v = pt?.tongTien ?? 0;
-                return s + (typeof v === 'number' ? v : Number(v) || 0);
-              }, 0);
-            const daNop = lichSuHo.tongKet?.daNop ?? computedDaNop;
-            const conNo = lichSuHo.tongKet?.conNo ?? computedConNo;
-
-            return (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                {/* Paid Card */}
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-green-700 font-semibold text-sm mb-1">✓ Đã nộp</p>
-                      <p className="text-3xl font-bold text-green-600">
-                        {formatVND(daNop)}
-                      </p>
-                      <p className="text-green-600 text-xs mt-2">đ</p>
-                    </div>
-                    <div className="text-5xl opacity-20">💰</div>
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* Paid Card */}
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-green-700 font-semibold text-sm mb-1">✓ Đã nộp</p>
+                  <p className="text-3xl font-bold text-green-600">
+                    {formatVND(lichSuHo?.tongKet?.daNop ?? 0)}
+                  </p>
+                  <p className="text-green-600 text-xs mt-2">đ</p>
                 </div>
-
-                {/* Debt Card */}
-                <div className="bg-gradient-to-br from-red-50 to-rose-50 border-2 border-red-300 rounded-xl p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-red-700 font-semibold text-sm mb-1">⚠ Còn nợ</p>
-                      <p className="text-3xl font-bold text-red-600">
-                        {formatVND(conNo)}
-                      </p>
-                      <p className="text-red-600 text-xs mt-2">đ</p>
-                    </div>
-                    <div className="text-5xl opacity-20">📌</div>
-                  </div>
-                </div>
+                <div className="text-5xl opacity-20">💰</div>
               </div>
-            );
-          })()}
+            </div>
 
-          {/* Phieu Thu List */}
+            {/* Debt Card */}
+            <div className="bg-gradient-to-br from-red-50 to-rose-50 border-2 border-red-300 rounded-xl p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-red-700 font-semibold text-sm mb-1">⚠ Còn nợ</p>
+                  <p className="text-3xl font-bold text-red-600">
+                    {formatVND(lichSuHo?.tongKet?.conNo ?? 0)}
+                  </p>
+                  <p className="text-red-600 text-xs mt-2">đ</p>
+                </div>
+                <div className="text-5xl opacity-20">📌</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Danh Sach Phieu Thu */}
           <div>
             <h4 className="text-xl font-bold text-gray-800 mb-4">Danh sách phiếu thu</h4>
-            {(() => {
-              const danhSachPhieuThu = Array.isArray(lichSuHo?.danhSachPhieuThu) ? lichSuHo.danhSachPhieuThu : [];
-              return (
-                <>
-                  {danhSachPhieuThu.length === 0 && (
-                    <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                      <p className="text-gray-500">📭 Không có phiếu thu</p>
-                    </div>
-                  )}
-                  {danhSachPhieuThu.length > 0 && (
-                    <div className="space-y-3">
-                      {danhSachPhieuThu.map((pt: any) => (
-                        <div
-                          key={pt._id}
-                          className={`rounded-lg border-l-4 p-4 ${pt.trangThai === 'Đã thu'
-                            ? 'bg-green-50 border-l-green-500'
-                            : 'bg-yellow-50 border-l-yellow-500'
+            {!Array.isArray(lichSuHo?.danhSachPhieuThu) || lichSuHo.danhSachPhieuThu.length === 0 ? (
+              <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                <p className="text-gray-500">📭 Không có phiếu thu</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {lichSuHo.danhSachPhieuThu.map((pt: any) => (
+                  <div
+                    key={pt._id}
+                    className={`rounded-lg border-l-4 p-4 ${pt.trangThai === 'Đã thu'
+                      ? 'bg-green-50 border-l-green-500'
+                      : 'bg-yellow-50 border-l-yellow-500'
+                      }`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-bold text-gray-800">{pt.maPhieuThu}</p>
+                        <p className="text-sm text-gray-600">
+                          📅 {new Date(pt.ngayThu).toLocaleDateString('vi-VN')}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-lg text-green-600">
+                          {formatVND(pt.tongTien)} đ
+                        </p>
+                        <span
+                          className={`inline-block text-xs font-semibold px-2 py-1 rounded-full mt-1 ${pt.trangThai === 'Đã thu'
+                            ? 'bg-green-200 text-green-800'
+                            : 'bg-yellow-200 text-yellow-800'
                             }`}
                         >
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <p className="font-bold text-gray-800">{pt.maPhieuThu}</p>
-                              <p className="text-sm text-gray-600">
-                                📅 {new Date(pt.ngayThu).toLocaleDateString('vi-VN')}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-bold text-lg text-green-600">
-                                {formatVND(pt.tongTien)} đ
-                              </p>
-                              <span
-                                className={`inline-block text-xs font-semibold px-2 py-1 rounded-full mt-1 ${pt.trangThai === 'Đã thu'
-                                  ? 'bg-green-200 text-green-800'
-                                  : 'bg-yellow-200 text-yellow-800'
-                                  }`}
-                              >
-                                {pt.trangThai}
-                              </span>
-                            </div>
-                          </div>
-                          {pt.chiTietThu && pt.chiTietThu.length > 0 && (
-                            <div className="mt-3 pl-3 border-l-2 border-gray-200">
-                              {pt.chiTietThu.map((ct: any, idx: number) => (
-                                <p key={idx} className="text-sm text-gray-700 py-1">
-                                  • {ct.tenKhoanThu}:{' '}
-                                  <span className="font-semibold text-indigo-600">
-                                    {formatVND(ct.soTien)} đ
-                                  </span>
-                                </p>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                          {pt.trangThai}
+                        </span>
+                      </div>
                     </div>
-                  )}
-                </>
-              );
-            })()}
+                    {pt.chiTietThu && Array.isArray(pt.chiTietThu) && pt.chiTietThu.length > 0 && (
+                      <div className="mt-3 pl-3 border-l-2 border-gray-200 space-y-1">
+                        {pt.chiTietThu.map((ct: any, idx: number) => {
+                          // Determine fee category icon
+                          let icon = '💰';
+                          const tenKhoan = ct.tenKhoanThu?.toLowerCase() || '';
+                          if (tenKhoan.includes('cố định') || tenKhoan.includes('quản lý')) {
+                            icon = '📋';
+                          } else if (tenKhoan.includes('đóng góp') || tenKhoan.includes('ủng hộ')) {
+                            icon = '🤝';
+                          } else if (tenKhoan.includes('vệ sinh')) {
+                            icon = '🧹';
+                          } else if (tenKhoan.includes('dịch vụ')) {
+                            icon = '🔧';
+                          }
+
+                          return (
+                            <p key={idx} className="text-sm text-gray-700 py-1">
+                              {icon} {ct.tenKhoanThu}:{' '}
+                              <span className="font-semibold text-indigo-600">
+                                {formatVND(ct.soTien)} đ
+                              </span>
+                            </p>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -524,39 +511,88 @@ export default function ThongKePage() {
       {/* Phiếu details modal */}
       {selectedPhieu && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl p-6">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h4 className="text-lg font-bold">Chi tiết phiếu: {selectedPhieu.maPhieuThu}</h4>
                 <p className="text-sm text-gray-600">Chủ hộ: {selectedPhieu.tenChuHo}</p>
+                <p className="text-sm text-gray-600">Địa chỉ: {selectedPhieu.diaChi}</p>
                 <p className="text-sm text-gray-600">Ngày: {selectedPhieu.ngayThu ? new Date(selectedPhieu.ngayThu).toLocaleDateString('vi-VN') : '—'}</p>
               </div>
               <button onClick={closePhieuDetails} className="text-gray-500 hover:text-gray-800 text-2xl">✕</button>
             </div>
 
-            <div className="divide-y">
+            <div className="divide-y space-y-4">
+              {/* All fee items */}
               <div className="pb-4">
-                <h5 className="font-semibold mb-2">Các khoản đã nộp</h5>
+                <h5 className="font-semibold mb-3 text-gray-800">Các khoản phí / Đóng góp</h5>
                 {selectedPhieu.chiTietThu && selectedPhieu.chiTietThu.length > 0 ? (
-                  <ul className="space-y-2">
-                    {selectedPhieu.chiTietThu.map((ct: any, i: number) => (
-                      <li key={i} className="flex justify-between items-center">
-                        <div className="text-sm text-gray-700">{ct.tenKhoanThu}</div>
-                        <div className="text-sm font-semibold text-indigo-600">{formatVND(ct.soTien)} đ</div>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="space-y-2">
+                    {selectedPhieu.chiTietThu.map((ct: any, i: number) => {
+                      // Determine fee category
+                      let icon = '💰';
+                      const tenKhoan = ct.tenKhoanThu?.toLowerCase() || '';
+                      if (tenKhoan.includes('cố định') || tenKhoan.includes('quản lý')) {
+                        icon = '📋';
+                      } else if (tenKhoan.includes('đóng góp') || tenKhoan.includes('ủng hộ')) {
+                        icon = '🤝';
+                      } else if (tenKhoan.includes('vệ sinh') || tenKhoan.includes('vệ sinh')) {
+                        icon = '🧹';
+                      } else if (tenKhoan.includes('dịch vụ')) {
+                        icon = '🔧';
+                      }
+
+                      return (
+                        <div
+                          key={i}
+                          className="flex justify-between items-start p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{icon}</span>
+                              <span className="text-sm font-medium text-gray-800">{ct.tenKhoanThu}</span>
+                            </div>
+                            {ct.ghiChu && (
+                              <p className="text-xs text-gray-500 mt-1 ml-6">{ct.ghiChu}</p>
+                            )}
+                          </div>
+                          <div className="text-right ml-4">
+                            <div className="text-sm font-bold text-green-600">{formatVND(ct.soTien)} đ</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 ) : (
-                  <div className="text-sm text-gray-500">Không có khoản thu chi tiết.</div>
+                  <div className="text-sm text-gray-500 p-3 bg-gray-50 rounded-lg">Không có khoản thu chi tiết.</div>
                 )}
               </div>
 
+              {/* Summary */}
               <div className="pt-4">
-                <div className="flex justify-between items-center">
-                  <div className="text-sm text-gray-600">Tổng</div>
-                  <div className="text-lg font-bold text-green-600">{formatVND(selectedPhieu.tongTien)} đ</div>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <p className="text-xs text-gray-600 mb-1">Số lượng khoản</p>
+                    <p className="text-lg font-bold text-blue-600">{selectedPhieu.chiTietThu?.length || 0}</p>
+                  </div>
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <p className="text-xs text-gray-600 mb-1">Tổng cộng</p>
+                    <p className="text-lg font-bold text-green-600">{formatVND(selectedPhieu.tongTien)} đ</p>
+                  </div>
                 </div>
-                <div className="text-sm text-gray-500 mt-2">Trạng thái: {selectedPhieu.trangThai ?? '—'}</div>
+                <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                  <span className="text-sm font-medium text-gray-700">Trạng thái</span>
+                  <span
+                    className={`inline-block text-sm font-semibold px-3 py-1 rounded-full ${selectedPhieu.trangThai === 'Đã thu'
+                      ? 'bg-green-200 text-green-800'
+                      : selectedPhieu.trangThai === 'Đang nợ'
+                        ? 'bg-red-200 text-red-800'
+                        : 'bg-yellow-200 text-yellow-800'
+                      }`}
+                  >
+                    {selectedPhieu.trangThai ?? '—'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
