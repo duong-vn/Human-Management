@@ -139,7 +139,7 @@ export default function QuanLyCacKhoanThu() {
 
     if (status === "Đã thu") {
       toast(`Xác nhận nộp phí?`, {
-        description: `Khoản: ${activeKhoanThu.tenKhoanThu} - Hộ: ${hoKhau.chuHo?.hoTen}. Số tiền: ${Number(tongTien).toLocaleString()} đ`,
+        description: `Khoản: ${activeKhoanThu.tenKhoanThu} - Hộ: ${hoKhau.chuHo?.hoTen}. Số tiền: ${Number(tongTien).toLocaleString()} VNĐ`,
         action: {
           label: "Xác nhận",
           onClick: () => thuPhiMutation.mutate(payload),
@@ -181,7 +181,7 @@ export default function QuanLyCacKhoanThu() {
                             {isActive && <CheckCircle size={16} className="text-blue-600"/>}
                         </div>
                         <div className="mt-1 flex items-center gap-1 text-sm text-gray-500">
-                             <DollarSign size={14}/> {Number(kt.soTien).toLocaleString()} đ
+                            {Number(kt.soTien).toLocaleString()} VNĐ
                         </div>
                     </div>
                 )
@@ -245,7 +245,7 @@ export default function QuanLyCacKhoanThu() {
                                         <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 text-gray-600 font-bold text-xs">{soNK}</span>
                                     </td>
                                     <td className="p-4 text-right">
-                                        <div className="font-bold text-gray-700">{Number(tongTien).toLocaleString()} ₫</div>
+                                        <div className="font-bold text-gray-700">{Number(tongTien).toLocaleString()} VNĐ</div>
                                     </td>
                                     <td className="p-4 text-center">
                                         {currentStatus === "Đã thu" ? (

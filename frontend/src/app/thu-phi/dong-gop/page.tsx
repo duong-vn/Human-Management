@@ -236,13 +236,13 @@ export default function QuanLyDongGop() {
                                 <div className="text-right hidden md:block">
                                     <p className="text-[10px] text-orange-500 uppercase font-bold">Chưa nộp (Cam kết)</p>
                                     <p className="text-sm font-bold text-orange-400">
-                                        {camp.pendingMoney.toLocaleString()} ₫
+                                        {camp.pendingMoney.toLocaleString()} VNĐ
                                     </p>
                                 </div>
                              )}
                              <div className="text-right">
                                 <p className="text-[10px] text-gray-400 uppercase font-bold">Tổng thực nhận</p>
-                                <p className="text-xl font-bold text-red-600">{camp.totalMoney.toLocaleString()} ₫</p>
+                                <p className="text-xl font-bold text-red-600">{camp.totalMoney.toLocaleString()} VNĐ</p>
                             </div>
 
                             <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
@@ -296,7 +296,7 @@ export default function QuanLyDongGop() {
                                                         )}
                                                     </td>
                                                     <td className={`p-3 text-right font-bold ${isPaid ? "text-gray-700" : "text-orange-500"}`}>
-                                                        {Number(detail?.soTien).toLocaleString()} ₫
+                                                        {Number(detail?.soTien).toLocaleString()} VNĐ
                                                     </td>
                                                     <td className="p-3 text-right">
                                                         {!isPaid && (
@@ -354,7 +354,7 @@ export default function QuanLyDongGop() {
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">Số tiền đóng góp (₫)</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">Số tiền đóng góp (VNĐ)</label>
                         <input type="number" className="w-full border-2 border-red-100 p-3 rounded-lg text-2xl font-bold text-red-600 outline-none focus:border-red-500" value={donationAmount} onChange={(e) => setDonationAmount(Number(e.target.value))} />
                     </div>
                     <div>
