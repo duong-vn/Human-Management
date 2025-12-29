@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { X, Users } from "lucide-react";
-import { HoKhau, DoiChuHoParams, ThanhVien } from "./types";
+import { HoKhau, DoiChuHoParams } from "./types";
 
 interface Props {
   isOpen: boolean;
@@ -19,60 +19,36 @@ export default function DoiChuHoModal({
   isLoading,
 }: Props) {
   const [chuHoMoiId, setChuHoMoiId] = useState("");
-  const [chuHoMoiTen, setChuHoMoiTen] = useState("");
   const [lyDo, setLyDo] = useState("");
 
   useEffect(() => {
     if (isOpen) {
       setChuHoMoiId("");
-      setChuHoMoiTen("");
       setLyDo("");
     }
   }, [isOpen]);
 
   if (!isOpen || !hoKhau) return null;
 
-  const currentChuHoId =
-    typeof hoKhau.chuHo.nhanKhauId === "object"
-      ? hoKhau.chuHo.nhanKhauId._id
-      : hoKhau.chuHo.nhanKhauId;
-
-  const currentChuHoTen = hoKhau.chuHo.hoTen;
+  // Lấy ID và tên chủ hộ hiện tại
+  const currentChuHoId = hoKhau.chuHo?._id || hoKhau.chuHoId || "";
+  const currentChuHoTen = hoKhau.chuHo?.hoTen || "N/A";
 
   // Danh sách thành viên (không bao gồm chủ hộ hiện tại)
-  const thanhVienList = (hoKhau.thanhVien || []).filter((tv) => {
-    const id =
-      typeof tv.nhanKhauId === "object" ? tv.nhanKhauId._id : tv.nhanKhauId;
-    return id !== currentChuHoId;
-  });
-
-  const handleSelectChuHoMoi = (nkId: string) => {
-    setChuHoMoiId(nkId);
-    const selected = thanhVienList.find((tv) => {
-      const id =
-        typeof tv.nhanKhauId === "object" ? tv.nhanKhauId._id : tv.nhanKhauId;
-      return id === nkId;
-    });
-    if (selected) {
-      const hoTen =
-        typeof selected.nhanKhauId === "object" && selected.nhanKhauId.hoTen
-          ? selected.nhanKhauId.hoTen
-          : selected.hoTen;
-      setChuHoMoiTen(hoTen);
-    }
-  };
+  const thanhVienList = (hoKhau.thanhVien || []).filter(
+    (tv) => tv.nhanKhauId !== currentChuHoId
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!chuHoMoiId || !chuHoMoiTen) {
+    if (!chuHoMoiId) {
       alert("Vui lòng chọn chủ hộ mới!");
       return;
     }
 
     onSubmit({
       chuHoMoiId,
-      hoTenChuHoMoi: chuHoMoiTen,
       lyDo: lyDo || undefined,
     });
   };
@@ -116,26 +92,16 @@ export default function DoiChuHoModal({
             {thanhVienList.length > 0 ? (
               <select
                 value={chuHoMoiId}
-                onChange={(e) => handleSelectChuHoMoi(e.target.value)}
+                onChange={(e) => setChuHoMoiId(e.target.value)}
                 className="w-full border border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition"
                 required
               >
                 <option value="">-- Chọn thành viên --</option>
-                {thanhVienList.map((tv, index) => {
-                  const id =
-                    typeof tv.nhanKhauId === "object"
-                      ? tv.nhanKhauId._id
-                      : tv.nhanKhauId;
-                  const hoTen =
-                    typeof tv.nhanKhauId === "object" && tv.nhanKhauId.hoTen
-                      ? tv.nhanKhauId.hoTen
-                      : tv.hoTen;
-                  return (
-                    <option key={id || index} value={id}>
-                      {hoTen} ({tv.quanHeVoiChuHo || "---"})
-                    </option>
-                  );
-                })}
+                {thanhVienList.map((tv, index) => (
+                  <option key={tv.nhanKhauId || index} value={tv.nhanKhauId}>
+                    {tv.hoTen} ({tv.quanHeVoiChuHo || "---"})
+                  </option>
+                ))}
               </select>
             ) : (
               <div className="p-3 bg-yellow-50 text-yellow-700 rounded-xl text-sm">

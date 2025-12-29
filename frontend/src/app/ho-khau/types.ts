@@ -7,15 +7,22 @@ export interface DiaChi {
   tinhThanh?: string;
 }
 
-export interface ChuHo {
-  nhanKhauId?: string | { _id: string; hoTen?: string };
+// Thông tin chủ hộ (populated từ NhanKhau)
+export interface ChuHoInfo {
+  _id: string;
   hoTen: string;
+  ngaySinh?: string;
+  gioiTinh?: string;
 }
 
+// Thành viên (lấy từ NhanKhau)
 export interface ThanhVien {
-  nhanKhauId: string | { _id: string; hoTen?: string; trangThai?: string };
+  nhanKhauId: string;
   hoTen: string;
   quanHeVoiChuHo: string;
+  ngaySinh?: string;
+  gioiTinh?: string;
+  trangThai?: string;
 }
 
 export interface LichSuThayDoi {
@@ -27,9 +34,10 @@ export interface LichSuThayDoi {
 export interface HoKhau {
   _id?: string;
   id?: string;
-  chuHo: ChuHo;
+  chuHoId: string;
+  chuHo?: ChuHoInfo; // Populated từ backend
   diaChi: DiaChi;
-  thanhVien: ThanhVien[];
+  thanhVien: ThanhVien[]; // Computed từ NhanKhau bởi backend
   trangThai: "Đang hoạt động" | "Đã tách hộ" | "Đã xóa";
   ngayLap?: string;
   ghiChu?: string;
@@ -51,15 +59,11 @@ export interface NhanKhauBasic {
 
 // Params cho API tạo hộ khẩu
 export interface CreateHoKhauParams {
-  chuHo: {
-    nhanKhauId: string;
-    hoTen: string;
-  };
+  chuHoId: string;
   diaChi: DiaChi;
   trangThai?: string;
   thanhVien?: {
     nhanKhauId: string;
-    hoTen: string;
     quanHeVoiChuHo: string;
   }[];
   ghiChu?: string;
@@ -70,30 +74,25 @@ export interface TachHoParams {
   hoKhauGocId: string;
   chuHoMoi: {
     nhanKhauId: string;
-    hoTen: string;
   };
   diaChi: DiaChi;
   danhSachNhanKhauMoi: {
     nhanKhauId: string;
-    hoTen: string;
     quanHeVoiChuHo: string;
   }[];
   chuHoMoiChoHoGoc?: {
     nhanKhauId: string;
-    hoTen: string;
   };
 }
 
 // Params cho API đổi chủ hộ
 export interface DoiChuHoParams {
   chuHoMoiId: string;
-  hoTenChuHoMoi: string;
   lyDo?: string;
 }
 
 // Params cho API thêm thành viên
 export interface ThemThanhVienParams {
   nhanKhauId: string;
-  hoTen: string;
   quanHeVoiChuHo: string;
 }

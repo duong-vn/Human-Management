@@ -49,15 +49,9 @@ export default function HoKhauDetailModal({
     return parts.join(", ") || "Chưa có địa chỉ";
   };
 
-  // Lấy tên chủ hộ
+  // Lấy tên chủ hộ - giờ đây chuHo là object được populate từ backend
   const getChuHoName = () => {
-    if (
-      typeof hoKhau.chuHo.nhanKhauId === "object" &&
-      hoKhau.chuHo.nhanKhauId?.hoTen
-    ) {
-      return hoKhau.chuHo.nhanKhauId.hoTen;
-    }
-    return hoKhau.chuHo.hoTen;
+    return hoKhau.chuHo?.hoTen || "Chưa có chủ hộ";
   };
 
   // Get trạng thái badge color
@@ -210,18 +204,10 @@ export default function HoKhauDetailModal({
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {hoKhau.thanhVien.map((tv, index) => {
-                      const nkId =
-                        typeof tv.nhanKhauId === "object"
-                          ? tv.nhanKhauId._id
-                          : tv.nhanKhauId;
-                      const nkTrangThai =
-                        typeof tv.nhanKhauId === "object"
-                          ? tv.nhanKhauId.trangThai
-                          : undefined;
-                      const nkHoTen =
-                        typeof tv.nhanKhauId === "object" && tv.nhanKhauId.hoTen
-                          ? tv.nhanKhauId.hoTen
-                          : tv.hoTen;
+                      // Giờ đây nhanKhauId là string đơn giản, không còn là object
+                      const nkId = tv.nhanKhauId;
+                      const nkHoTen = tv.hoTen;
+                      const nkTrangThai = tv.trangThai;
 
                       return (
                         <tr

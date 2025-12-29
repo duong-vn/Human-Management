@@ -110,7 +110,6 @@ export default function ThemThanhVienModal({
 
     onSubmit({
       nhanKhauId: selectedNhanKhau._id,
-      hoTen: selectedNhanKhau.hoTen,
       quanHeVoiChuHo,
     });
   };

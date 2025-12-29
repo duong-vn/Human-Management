@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { ChuHoDto, DiaChi, ThanhVien } from '../dto/create-ho-khau.dto';
+import { DiaChi } from '../dto/create-ho-khau.dto';
 
 export type HoKhauDocument = HoKhau & Document;
 
@@ -12,10 +12,9 @@ export class LichSuThayDoiHoKhau {
 
 @Schema({ timestamps: true })
 export class HoKhau {
-  @Prop({
-    type: ChuHoDto,
-  })
-  chuHo: ChuHoDto;
+  // Chủ hộ - tham chiếu đến NhanKhau
+  @Prop({ type: Types.ObjectId, ref: 'NhanKhau', required: true })
+  chuHoId: Types.ObjectId;
 
   @Prop({
     type: DiaChi,
@@ -23,11 +22,7 @@ export class HoKhau {
   })
   diaChi: DiaChi;
 
-  @Prop({
-    type: [ThanhVien],
-    default: [],
-  })
-  thanhVien: ThanhVien[];
+  // Thành viên được lấy từ NhanKhau.find({ hoKhauId }) - không lưu trực tiếp trong schema nữa
 
   @Prop({
     type: String,

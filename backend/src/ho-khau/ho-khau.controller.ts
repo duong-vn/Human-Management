@@ -11,7 +11,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { HoKhauService } from './ho-khau.service';
-import { CreateHoKhauDto, DiaChi, ThanhVien } from './dto/create-ho-khau.dto';
+import { CreateHoKhauDto, DiaChi } from './dto/create-ho-khau.dto';
 import { UpdateHoKhauDto } from './dto/update-ho-khau.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -37,10 +37,7 @@ export class HoKhauController {
   @ApiBody({
     schema: {
       example: {
-        chuHo: {
-          nhanKhauId: '694cb3d6ab52b519fd76b918',
-          hoTen: 'Dương Tuấn Nguyễn',
-        },
+        chuHoId: '694cb3d6ab52b519fd76b918',
         diaChi: {
           soNha: '12',
           duong: 'Nguyễn Du',
@@ -52,12 +49,10 @@ export class HoKhauController {
         thanhVien: [
           {
             nhanKhauId: '694cb9093eeb3ec342ef4d0e',
-            hoTen: 'vo cua Nguyễn Tuấn Dương',
-            quanHeVoiChuHo: 'Vo',
+            quanHeVoiChuHo: 'Vợ',
           },
           {
             nhanKhauId: '694cbf831114476cbffaddd4',
-            hoTen: 'con cua Nguyễn Tuấn Dương',
             quanHeVoiChuHo: 'Con',
           },
         ],
@@ -78,7 +73,6 @@ export class HoKhauController {
         hoKhauGocId: '694d441431735a5a0eac845a',
         chuHoMoi: {
           nhanKhauId: '694cbf831114476cbffaddd4',
-          hoTen: 'con cau Nguyễn Tuan Duong',
         },
         diaChi: {
           soNha: '88',
@@ -90,18 +84,15 @@ export class HoKhauController {
         danhSachNhanKhauMoi: [
           {
             nhanKhauId: '694cb3d6ab52b519fd76b918',
-            hoTen: 'Nguyễn Văn A',
             quanHeVoiChuHo: 'Chủ hộ',
           },
           {
             nhanKhauId: '6926c6af840b406838006a28',
-            hoTen: 'Trần Thị B',
             quanHeVoiChuHo: 'Vợ',
           },
         ],
         chuHoMoiChoHoGoc: {
           nhanKhauId: '694cb9093eeb3ec342ef4d0e',
-          hoTen: 'Vợ của Nguyễn Tuấn Dương',
         },
       },
     },
@@ -110,10 +101,10 @@ export class HoKhauController {
     @Body()
     data: {
       hoKhauGocId: string;
-      chuHoMoi: { nhanKhauId: string; hoTen: string };
+      chuHoMoi: { nhanKhauId: string };
       diaChi: DiaChi;
-      danhSachNhanKhauMoi: ThanhVien[];
-      chuHoMoiChoHoGoc?: { nhanKhauId: string; hoTen: string };
+      danhSachNhanKhauMoi: { nhanKhauId: string; quanHeVoiChuHo: string }[];
+      chuHoMoiChoHoGoc?: { nhanKhauId: string };
     },
     @Request() req,
   ) {
@@ -212,6 +203,7 @@ export class HoKhauController {
       req.user.username,
     );
   }
+
   @Patch(':id/thay-doi-chu-ho')
   @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO)
   @ApiOperation({ summary: 'Thay đổi chủ hộ' })
@@ -219,7 +211,6 @@ export class HoKhauController {
     schema: {
       example: {
         chuHoMoiId: '691d9631baac1efb7579cf11',
-        hoTenChuHoMoi: 'Nguyễn Tuấn Dương',
         lyDo: 'Chủ hộ cũ chuyển đi',
       },
     },
@@ -229,7 +220,6 @@ export class HoKhauController {
     @Body()
     data: {
       chuHoMoiId: string;
-      hoTenChuHoMoi: string;
       lyDo?: string;
     },
     @Request() req,
@@ -246,14 +236,13 @@ export class HoKhauController {
     schema: {
       example: {
         nhanKhauId: '691d9631baac1efb7579cf13',
-        hoTen: 'Trần Minh Anh',
         quanHeVoiChuHo: 'Vợ',
       },
     },
   })
   themThanhVien(
     @Param('id') id: string,
-    @Body() data: { nhanKhauId: string; hoTen: string; quanHeVoiChuHo: string },
+    @Body() data: { nhanKhauId: string; quanHeVoiChuHo: string },
     @Request() req,
   ) {
     return this.hoKhauService.themThanhVien(id, data, req.user.username);
