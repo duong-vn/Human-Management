@@ -23,7 +23,7 @@ export class HoKhauService {
     @InjectModel(HoKhau.name) private hoKhauModel: Model<HoKhauDocument>,
     @InjectModel(NhanKhau.name)
     private nhanKhauModel: Model<NhanKhauDocument>,
-  ) { }
+  ) {}
 
   async create(createHoKhauDto: CreateHoKhauDto): Promise<HoKhau> {
     const { thanhVien, chuHo } = createHoKhauDto;
@@ -183,6 +183,35 @@ export class HoKhauService {
     });
 
     return hoKhauMoi;
+  }
+
+  async capNhatQuanHe(
+    hoKhauId: string,
+    nhanKhauId: string,
+    quanHeVoiChuHo: string,
+    nguoiThucHien: string,
+  ): Promise<HoKhau | null> {
+    const lichSu: LichSuThayDoiHoKhau = {
+      noiDung: `Cập nhật quan hệ với chủ hộ: ${quanHeVoiChuHo}`,
+      ngayThayDoi: new Date(),
+      nguoiThucHien,
+    };
+
+    return this.hoKhauModel
+      .findByIdAndUpdate(
+        hoKhauId,
+        {
+          $set: {
+            'thanhVien.$[elem].quanHeVoiChuHo': quanHeVoiChuHo,
+          },
+          $push: { lichSuThayDoi: lichSu },
+        },
+        {
+          new: true,
+          arrayFilters: [{ 'elem.nhanKhauId': new Types.ObjectId(nhanKhauId) }],
+        },
+      )
+      .exec();
   }
 
   // Thêm thành viên vào hộ khẩu

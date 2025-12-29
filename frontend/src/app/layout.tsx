@@ -34,13 +34,11 @@ export default function RootLayout({
       >
         {/* --- SỬA Ở ĐÂY: Bọc Providers ra ngoài cùng --- */}
         <Providers>
-
-          <Toaster position="top-right" richColors closeButton />
+          <Toaster position="top-left" richColors closeButton />
 
           <Boostrap>
             <MainLayout>{children}</MainLayout>
           </Boostrap>
-
         </Providers>
         {/* ----------------------------------------------- */}
       </body>

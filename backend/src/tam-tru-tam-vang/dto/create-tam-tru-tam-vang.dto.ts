@@ -14,7 +14,7 @@ import { DiaChi } from 'src/ho-khau/dto/create-ho-khau.dto';
 export class CreateTamTruTamVangDto {
   @ApiProperty({ description: 'ID nhân khẩu' })
   @IsOptional()
-  @IsMongoId({ message: 'nhanKhauId phải là MongoDB ObjectId hợp lệ' })
+  @IsMongoId({ message: 'Nhân khẩu ID không hợp lệ' })
   nhanKhauId?: string;
 
   @ApiProperty({ description: 'Họ tên người đăng ký' })

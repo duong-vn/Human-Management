@@ -1,12 +1,13 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { X } from "lucide-react";
-import { DiaChi, CreateHoKhauParams, NhanKhauBasic, HoKhau } from "./types";
+import { X, Users, Edit2, Check, XCircle } from "lucide-react";
+import { DiaChi, CreateHoKhauParams, NhanKhauBasic, HoKhau, ThanhVien } from "./types";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: CreateHoKhauParams) => void;
+  onUpdateQuanHe?: (nhanKhauId: string, quanHeVoiChuHo: string) => void;
   initialData?: HoKhau | null;
   nhanKhauList: NhanKhauBasic[];
   isLoading: boolean;
@@ -20,10 +21,31 @@ const defaultDiaChi: DiaChi = {
   tinhThanh: "",
 };
 
+const quanHeOptions = [
+  "Chủ hộ",
+  "Vợ",
+  "Chồng",
+  "Con",
+  "Cha",
+  "Mẹ",
+  "Anh",
+  "Chị",
+  "Em",
+  "Ông",
+  "Bà",
+  "Cháu",
+  "Cô",
+  "Chú",
+  "Dì",
+  "Dượng",
+  "Khác",
+];
+
 export default function HoKhauFormModal({
   isOpen,
   onClose,
   onSubmit,
+  onUpdateQuanHe,
   initialData,
   nhanKhauList,
   isLoading,
@@ -33,6 +55,10 @@ export default function HoKhauFormModal({
   const [diaChi, setDiaChi] = useState<DiaChi>(defaultDiaChi);
   const [trangThai, setTrangThai] = useState("Đang hoạt động");
   const [ghiChu, setGhiChu] = useState("");
+  
+  // State cho việc edit quan hệ thành viên
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [editingQuanHe, setEditingQuanHe] = useState("");
 
   const isEditMode = !!initialData;
 
@@ -57,6 +83,8 @@ export default function HoKhauFormModal({
         setTrangThai("Đang hoạt động");
         setGhiChu("");
       }
+      setEditingMemberId(null);
+      setEditingQuanHe("");
     }
   }, [isOpen, initialData]);
 
@@ -73,6 +101,33 @@ export default function HoKhauFormModal({
     setDiaChi((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Lấy nhanKhauId từ thành viên
+  const getNhanKhauId = (tv: ThanhVien): string => {
+    return typeof tv.nhanKhauId === "object" ? tv.nhanKhauId._id : tv.nhanKhauId;
+  };
+
+  // Bắt đầu edit quan hệ
+  const startEditQuanHe = (tv: ThanhVien) => {
+    const nkId = getNhanKhauId(tv);
+    setEditingMemberId(nkId);
+    setEditingQuanHe(tv.quanHeVoiChuHo);
+  };
+
+  // Lưu quan hệ
+  const saveQuanHe = (nhanKhauId: string) => {
+    if (onUpdateQuanHe && editingQuanHe) {
+      onUpdateQuanHe(nhanKhauId, editingQuanHe);
+    }
+    setEditingMemberId(null);
+    setEditingQuanHe("");
+  };
+
+  // Hủy edit
+  const cancelEditQuanHe = () => {
+    setEditingMemberId(null);
+    setEditingQuanHe("");
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -86,6 +141,14 @@ export default function HoKhauFormModal({
         nhanKhauId: chuHoId,
         hoTen: chuHoTen,
       },
+      thanhVien: [
+        {
+          nhanKhauId: chuHoId,
+          hoTen: chuHoTen,
+          quanHeVoiChuHo: "Chủ hộ",
+        },
+      ],
+
       diaChi,
       trangThai,
       ghiChu,
@@ -98,7 +161,7 @@ export default function HoKhauFormModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <h2 className="text-xl font-bold text-gray-800">
@@ -145,7 +208,7 @@ export default function HoKhauFormModal({
                   </select>
                   {isEditMode && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Để đổi chủ hộ, vui lòng dùng chức năng "Đổi chủ hộ"
+                      Để đổi chủ hộ, vui lòng dùng chức năng &quot;Đổi chủ hộ&quot;
                     </p>
                   )}
                 </div>
@@ -164,6 +227,99 @@ export default function HoKhauFormModal({
                 </div>
               </div>
             </div>
+
+            {/* Danh sách thành viên - Chỉ hiển thị khi edit mode */}
+            {isEditMode && initialData?.thanhVien && initialData.thanhVien.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider flex items-center gap-2">
+                  <Users size={16} />
+                  Danh sách thành viên ({initialData.thanhVien.length} người)
+                </h3>
+                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Họ tên</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Quan hệ với chủ hộ</th>
+                        <th className="text-center px-4 py-3 text-xs font-semibold text-gray-600 uppercase w-24">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {initialData.thanhVien.map((tv) => {
+                        const nkId = getNhanKhauId(tv);
+                        const isEditing = editingMemberId === nkId;
+                        const isChuHo = tv.quanHeVoiChuHo === "Chủ hộ";
+                        
+                        return (
+                          <tr key={nkId} className="hover:bg-gray-50">
+                            <td className="px-4 py-3">
+                              <span className="font-medium text-gray-800">{tv.hoTen}</span>
+                              {isChuHo && (
+                                <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                  Chủ hộ
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              {isEditing ? (
+                                <select
+                                  value={editingQuanHe}
+                                  onChange={(e) => setEditingQuanHe(e.target.value)}
+                                  className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                  autoFocus
+                                >
+                                  {quanHeOptions.filter(qh => qh !== "Chủ hộ").map((qh) => (
+                                    <option key={qh} value={qh}>{qh}</option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="text-gray-600">{tv.quanHeVoiChuHo}</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              {!isChuHo && (
+                                isEditing ? (
+                                  <div className="flex items-center justify-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => saveQuanHe(nkId)}
+                                      className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition"
+                                      title="Lưu"
+                                    >
+                                      <Check size={16} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={cancelEditQuanHe}
+                                      className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition"
+                                      title="Hủy"
+                                    >
+                                      <XCircle size={16} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => startEditQuanHe(tv)}
+                                    className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                    title="Sửa quan hệ"
+                                  >
+                                    <Edit2 size={16} />
+                                  </button>
+                                )
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  💡 Bấm vào biểu tượng bút chì để sửa quan hệ với chủ hộ. Không thể sửa quan hệ của chủ hộ.
+                </p>
+              </div>
+            )}
 
             {/* Địa chỉ */}
             <div>

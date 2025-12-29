@@ -1,12 +1,13 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { X, UserPlus, Search } from "lucide-react";
+import { X, UserPlus, Search, CreditCard, Loader2 } from "lucide-react";
 import { NhanKhauBasic, ThemThanhVienParams } from "./types";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: ThemThanhVienParams) => void;
+  onSearchByCCCD?: (cccd: string) => Promise<NhanKhauBasic | null>;
   nhanKhauList: NhanKhauBasic[];
   currentThanhVienIds: string[]; // Danh sách ID thành viên hiện tại trong hộ
   isLoading: boolean;
@@ -35,6 +36,7 @@ export default function ThemThanhVienModal({
   isOpen,
   onClose,
   onSubmit,
+  onSearchByCCCD,
   nhanKhauList,
   currentThanhVienIds,
   isLoading,
@@ -43,6 +45,9 @@ export default function ThemThanhVienModal({
     useState<NhanKhauBasic | null>(null);
   const [quanHeVoiChuHo, setQuanHeVoiChuHo] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [cccdSearch, setCccdSearch] = useState("");
+  const [isSearchingCCCD, setIsSearchingCCCD] = useState(false);
+  const [cccdSearchError, setCccdSearchError] = useState("");
 
   // Reset form khi mở modal
   useEffect(() => {
@@ -50,6 +55,8 @@ export default function ThemThanhVienModal({
       setSelectedNhanKhau(null);
       setQuanHeVoiChuHo("");
       setSearchTerm("");
+      setCccdSearch("");
+      setCccdSearchError("");
     }
   }, [isOpen]);
 
@@ -66,6 +73,33 @@ export default function ThemThanhVienModal({
   const filteredNhanKhau = availableNhanKhau.filter((nk) =>
     nk.hoTen.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Tìm kiếm theo CCCD/CMND
+  const handleSearchByCCCD = async () => {
+    if (!cccdSearch.trim() || !onSearchByCCCD) return;
+    
+    setIsSearchingCCCD(true);
+    setCccdSearchError("");
+    
+    try {
+      const result = await onSearchByCCCD(cccdSearch.trim());
+      if (result) {
+        // Kiểm tra xem đã trong hộ khẩu này chưa
+        if (currentThanhVienIds.includes(result._id)) {
+          setCccdSearchError("Nhân khẩu này đã là thành viên của hộ khẩu!");
+        } else {
+          setSelectedNhanKhau(result);
+          setCccdSearchError("");
+        }
+      } else {
+        setCccdSearchError("Không tìm thấy nhân khẩu với số CMND/CCCD này");
+      }
+    } catch {
+      setCccdSearchError("Có lỗi xảy ra khi tìm kiếm");
+    } finally {
+      setIsSearchingCCCD(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +119,7 @@ export default function ThemThanhVienModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
@@ -103,7 +137,55 @@ export default function ThemThanhVienModal({
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+          {/* Tìm kiếm theo CCCD/CMND */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tìm nhanh bằng CMND/CCCD
+            </label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <CreditCard
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  size={18}
+                />
+                <input
+                  type="text"
+                  placeholder="Nhập số CMND hoặc CCCD..."
+                  value={cccdSearch}
+                  onChange={(e) => setCccdSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleSearchByCCCD())}
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleSearchByCCCD}
+                disabled={isSearchingCCCD || !cccdSearch.trim()}
+                className="px-4 py-2.5 bg-gray-800 text-white rounded-xl hover:bg-gray-700 transition font-medium disabled:opacity-50 flex items-center gap-2"
+              >
+                {isSearchingCCCD ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <Search size={18} />
+                )}
+                Tìm
+              </button>
+            </div>
+            {cccdSearchError && (
+              <p className="text-sm text-red-500 mt-2">{cccdSearchError}</p>
+            )}
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-3 bg-white text-gray-500">hoặc chọn từ danh sách</span>
+            </div>
+          </div>
+
           {/* Tìm kiếm nhân khẩu */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -123,37 +205,39 @@ export default function ThemThanhVienModal({
               />
             </div>
 
-            {/* Danh sách nhân khẩu */}
-            <div className="border border-gray-200 rounded-xl max-h-48 overflow-y-auto">
+            {/* Danh sách nhân khẩu - Hiển thị dạng grid */}
+            <div className="border border-gray-200 rounded-xl max-h-64 overflow-y-auto">
               {filteredNhanKhau.length > 0 ? (
-                filteredNhanKhau.map((nk) => (
-                  <div
-                    key={nk._id}
-                    onClick={() => setSelectedNhanKhau(nk)}
-                    className={`p-3 cursor-pointer border-b border-gray-100 last:border-b-0 transition hover:bg-gray-50 ${
-                      selectedNhanKhau?._id === nk._id
-                        ? "bg-blue-50 border-l-4 border-l-blue-500"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-medium text-gray-800">{nk.hoTen}</p>
-                        <p className="text-xs text-gray-500">
-                          {nk.ngaySinh
-                            ? new Date(nk.ngaySinh).toLocaleDateString("vi-VN")
-                            : "---"}{" "}
-                          • {nk.gioiTinh || "---"}
-                        </p>
+                <div className="grid grid-cols-2 gap-px bg-gray-200">
+                  {filteredNhanKhau.map((nk) => (
+                    <div
+                      key={nk._id}
+                      onClick={() => setSelectedNhanKhau(nk)}
+                      className={`p-3 cursor-pointer bg-white transition hover:bg-gray-50 ${
+                        selectedNhanKhau?._id === nk._id
+                          ? "bg-blue-50 ring-2 ring-inset ring-blue-500"
+                          : ""
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-gray-800 truncate">{nk.hoTen}</p>
+                          <p className="text-xs text-gray-500">
+                            {nk.ngaySinh
+                              ? new Date(nk.ngaySinh).toLocaleDateString("vi-VN")
+                              : "---"}{" "}
+                            • {nk.gioiTinh || "---"}
+                          </p>
+                        </div>
+                        {nk.hoKhauId && (
+                          <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full flex-shrink-0 ml-2">
+                            Đã có HK
+                          </span>
+                        )}
                       </div>
-                      {nk.hoKhauId && (
-                        <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
-                          Đã có hộ khẩu
-                        </span>
-                      )}
                     </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               ) : (
                 <div className="p-4 text-center text-gray-500 text-sm">
                   Không tìm thấy nhân khẩu phù hợp

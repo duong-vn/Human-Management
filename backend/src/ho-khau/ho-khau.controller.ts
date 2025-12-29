@@ -176,6 +176,29 @@ export class HoKhauController {
     return this.hoKhauService.update(id, updateHoKhauDto, req.user.username);
   }
 
+  @Patch(':id/cap-nhat-thanh-vien/:nhanKhauId')
+  @ApiOperation({ summary: 'Cập nhật quan hệ với chủ hộ' })
+  @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO)
+  @ApiBody({
+    schema: {
+      example: {
+        quanHeVoiChuHo: 'Con nuôi',
+      },
+    },
+  })
+  capNhatQuanHe(
+    @Param('id') id: string,
+    @Param('nhanKhauId') nhanKhauId: string,
+    @Body() data: { quanHeVoiChuHo: string },
+    @Request() req,
+  ) {
+    return this.hoKhauService.capNhatQuanHe(
+      id,
+      nhanKhauId,
+      data.quanHeVoiChuHo,
+      req.user.username,
+    );
+  }
   @Patch(':id/thay-doi-chu-ho')
   @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO)
   @ApiOperation({ summary: 'Thay đổi chủ hộ' })
