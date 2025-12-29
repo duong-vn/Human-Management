@@ -374,7 +374,7 @@ export default function ThongKePage() {
                                   onClick={() => openHoDetails(pt.hoKhauId?._id ?? pt.hoKhauId)}
                                   className="inline-block bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-3 py-2 rounded-lg text-sm font-bold hover:shadow-lg transition-all transform hover:scale-105 active:scale-95"
                                 >
-                                  Lịch sử
+                                  Chi tiết
                                 </button>
                               </td>
                             </tr>
@@ -452,8 +452,8 @@ export default function ThongKePage() {
                               <td className="px-4 py-3 text-center">
                                 <span
                                   className={`inline-block text-xs font-bold px-3 py-1 rounded-full ${pt.trangThai === 'Đang nợ'
-                                      ? 'bg-red-200 text-red-800'
-                                      : 'bg-yellow-200 text-yellow-800'
+                                    ? 'bg-red-200 text-red-800'
+                                    : 'bg-yellow-200 text-yellow-800'
                                     }`}
                                 >
                                   {pt.trangThai}
@@ -532,8 +532,55 @@ export default function ThongKePage() {
             </div>
           </div>
 
-          {/* Danh Sach Phieu Thu - REMOVED */}
-          {/* Thay vì hiển thị danh sách phiếu, chỉ hiển thị tổng kết */}
+          {/* Danh Sách Phiếu Thu */}
+          <div className="bg-white border-t mt-4 pt-4">
+            <div className="mb-4 flex items-center justify-between">
+              <h4 className="text-lg font-semibold text-gray-800">Danh sách phiếu thu</h4>
+              <span className="text-sm text-gray-500">{(lichSuHo?.danhSachPhieuThu?.length ?? 0) + ' phiếu'}</span>
+            </div>
+
+            {lichSuHo?.danhSachPhieuThu && lichSuHo.danhSachPhieuThu.length === 0 ? (
+              <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <p className="text-gray-500">📭 Không có phiếu thu</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-base">
+                  <thead>
+                    <tr className="bg-gray-50 border-b-2 border-gray-200">
+                      <th className="text-left px-4 py-3 font-bold text-gray-800">Mã phiếu</th>
+                      <th className="text-left px-4 py-3 font-bold text-gray-800">Ngày</th>
+                      <th className="text-left px-4 py-3 font-bold text-gray-800">Tổng tiền</th>
+                      <th className="text-center px-4 py-3 font-bold text-gray-800">Trạng thái</th>
+                      <th className="text-center px-4 py-3 font-bold text-gray-800">Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lichSuHo?.danhSachPhieuThu?.map((phieu: any) => (
+                      <tr key={phieu._id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 font-mono text-sm font-semibold text-blue-600">{phieu.maPhieuThu}</td>
+                        <td className="px-4 py-3 text-gray-700">{phieu.ngayThu ? new Date(phieu.ngayThu).toLocaleDateString('vi-VN') : '—'}</td>
+                        <td className="px-4 py-3 font-bold text-gray-800">{phieu.tongTien?.toLocaleString?.('vi-VN') ?? phieu.tongTien} đ</td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={`inline-block text-xs font-bold px-3 py-1 rounded-full ${phieu.trangThai === 'Đã thu' ? 'bg-green-200 text-green-800' : phieu.trangThai === 'Đang nợ' ? 'bg-red-200 text-red-800' : 'bg-yellow-200 text-yellow-800'}`}>
+                            {phieu.trangThai ?? '—'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => openPhieuDetails(phieu)}
+                            className="inline-block bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-3 py-2 rounded-lg text-sm font-bold hover:shadow-lg transition-all transform hover:scale-105 active:scale-95"
+                          >
+                            Chi tiết
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
