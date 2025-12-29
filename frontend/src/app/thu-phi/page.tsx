@@ -10,21 +10,15 @@ import {
 } from "./api";
 import {
   Search,
-  Filter,
-  User,
   CheckCircle,
   Clock,
   Wallet,
   Heart,
-  TrendingUp,
   Eye,
   X,
   Trash2,
   Plus,
-  Calendar,
-  AlertTriangle
 } from "lucide-react";
-import Link from "next/link";
 import { toast } from "sonner";
 
 export default function QuanLyThuPhi() {
@@ -77,6 +71,12 @@ export default function QuanLyThuPhi() {
       return Array.isArray(res) ? res : res?.data || [];
     },
   });
+
+  // Hàm bổ trợ xử lý ID
+  const getCleanId = (obj: any) => {
+    if (!obj) return "";
+    return typeof obj === "string" ? obj : (obj._id || obj.id || String(obj));
+  };
 
   // 2. MUTATIONS
   const createKhoanThuMutation = useMutation({
@@ -136,7 +136,7 @@ export default function QuanLyThuPhi() {
     });
   };
 
-  // 4. LOGIC THỐNG KÊ (Đã sửa để bóc tách chi tiết từng khoản trong phiếu gộp)
+  // 4. LOGIC THỐNG KÊ (FIX: TRỪ NỢ KHI ĐÃ NỘP TIỀN)
   const stats = useMemo(() => {
     let totalBatBuoc = 0;
     let totalTuNguyen = 0;
@@ -145,13 +145,28 @@ export default function QuanLyThuPhi() {
     const listDetailTuNguyen: any[] = [];
     const listDetailDangNo: any[] = [];
 
-    const batBuocIds = new Set(listBatBuocDef.map((k: any) => k._id || k.id));
-    const tuNguyenIds = new Set(listTuNguyenDef.map((k: any) => k._id || k.id));
+    const batBuocIds = new Set(listBatBuocDef.map((k: any) => getCleanId(k)));
+    const tuNguyenIds = new Set(listTuNguyenDef.map((k: any) => getCleanId(k)));
 
+    // BƯỚC 1: Thu thập tất cả các khoản đã nộp thành công (Hộ + Khoản + Kỳ)
+    const daNopKeys = new Set();
+    dsPhieuThu.forEach((pt: any) => {
+      if (pt.trangThai === "Đã thu") {
+        pt.chiTietThu?.forEach((detail: any) => {
+          const key = `${getCleanId(pt.hoKhauId)}-${getCleanId(detail.khoanThuId)}-${pt.kyThu}`;
+          daNopKeys.add(key);
+        });
+      }
+    });
+
+    // BƯỚC 2: Duyệt danh sách phiếu để tính toán thực thu và nợ còn lại
     dsPhieuThu.forEach((pt: any) => {
         pt.chiTietThu?.forEach((detail: any) => {
             const amount = Number(detail.soTien) || 0;
-            const kId = detail.khoanThuId;
+            const kId = getCleanId(detail.khoanThuId);
+            const hkId = getCleanId(pt.hoKhauId);
+            const currentKey = `${hkId}-${kId}-${pt.kyThu}`;
+
             const detailItem = {
                 maPhieu: pt.maPhieuThu,
                 tenChuHo: pt.tenChuHo,
@@ -161,7 +176,6 @@ export default function QuanLyThuPhi() {
                 ghiChu: detail.ghiChu
             };
 
-            // Phân loại theo trạng thái của phiếu tổng
             if (pt.trangThai === "Đã thu") {
                 if (batBuocIds.has(kId)) {
                     totalBatBuoc += amount;
@@ -170,7 +184,9 @@ export default function QuanLyThuPhi() {
                     totalTuNguyen += amount;
                     listDetailTuNguyen.push(detailItem);
                 }
-            } else if (pt.trangThai === "Chưa thu") {
+            }
+            // 🟢 FIX LỖI: Chỉ tính vào NỢ nếu chưa tồn tại bất kỳ phiếu ĐÃ THU nào cho khoản này
+            else if (pt.trangThai === "Chưa thu" && !daNopKeys.has(currentKey)) {
                 totalDangNo += amount;
                 listDetailDangNo.push(detailItem);
             }
@@ -220,16 +236,10 @@ export default function QuanLyThuPhi() {
           <p className="text-gray-500 text-sm mt-1">Lịch sử đóng góp và thu phí của cư dân</p>
         </div>
         <div className="flex gap-3">
-            <button
-              onClick={() => handleOpenAdd("Bắt buộc")}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 font-medium transition-all active:scale-95 flex items-center gap-2"
-            >
+            <button onClick={() => handleOpenAdd("Bắt buộc")} className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 font-medium transition-all active:scale-95 flex items-center gap-2">
                 <Plus size={18}/> Phí Cố Định
             </button>
-            <button
-              onClick={() => handleOpenAdd("Tự nguyện")}
-              className="px-4 py-2 bg-rose-500 text-white rounded-lg shadow-lg hover:bg-rose-600 font-medium transition-all active:scale-95 flex items-center gap-2"
-            >
+            <button onClick={() => handleOpenAdd("Tự nguyện")} className="px-4 py-2 bg-rose-500 text-white rounded-lg shadow-lg hover:bg-rose-600 font-medium transition-all active:scale-95 flex items-center gap-2">
                 <Heart size={18}/> Quỹ Đóng Góp
             </button>
         </div>
@@ -237,41 +247,41 @@ export default function QuanLyThuPhi() {
 
       {/* STATS CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden group">
-              <div className="flex justify-between items-start z-10">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
+              <div className="flex justify-between items-start">
                   <div>
                       <p className="text-gray-500 text-sm font-semibold uppercase mb-1">Thực thu Phí Cố Định</p>
-                      <h3 className="text-2xl font-bold text-blue-600">{stats.totalBatBuoc.toLocaleString()} ₫</h3>
+                      <h3 className="text-2xl font-bold text-blue-600">{stats.totalBatBuoc.toLocaleString()} VNĐ</h3>
                   </div>
                   <div className="p-3 bg-blue-50 rounded-full text-blue-600"><Wallet size={24} /></div>
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-100 z-10">
+              <div className="mt-4 pt-4 border-t border-gray-100">
                   <button onClick={() => openModal("bat-buoc")} className="flex items-center gap-2 text-xs font-medium text-blue-600 hover:underline"><Eye size={14}/> Xem chi tiết</button>
               </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden group">
-              <div className="flex justify-between items-start z-10">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
+              <div className="flex justify-between items-start">
                   <div>
                       <p className="text-gray-500 text-sm font-semibold uppercase mb-1">Thực thu Đóng Góp</p>
-                      <h3 className="text-2xl font-bold text-rose-500">{stats.totalTuNguyen.toLocaleString()} ₫</h3>
+                      <h3 className="text-2xl font-bold text-rose-500">{stats.totalTuNguyen.toLocaleString()} VNĐ</h3>
                   </div>
                   <div className="p-3 bg-rose-50 rounded-full text-rose-500"><Heart size={24} /></div>
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-100 z-10">
+              <div className="mt-4 pt-4 border-t border-gray-100">
                   <button onClick={() => openModal("tu-nguyen")} className="flex items-center gap-2 text-xs font-medium text-rose-600 hover:underline"><Eye size={14}/> Xem chi tiết</button>
               </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden group">
-              <div className="flex justify-between items-start z-10">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
+              <div className="flex justify-between items-start">
                   <div>
-                      <p className="text-gray-500 text-sm font-semibold uppercase mb-1">Tổng nợ (Chưa thu)</p>
-                      <h3 className="text-2xl font-bold text-orange-500">{stats.totalDangNo.toLocaleString()} ₫</h3>
+                      <p className="text-gray-500 text-sm font-semibold uppercase mb-1">Chưa thu</p>
+                      <h3 className="text-2xl font-bold text-orange-500">{stats.totalDangNo.toLocaleString()} VNĐ</h3>
                   </div>
                   <div className="p-3 bg-orange-50 rounded-full text-orange-500"><Clock size={24} /></div>
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-100 z-10">
+              <div className="mt-4 pt-4 border-t border-gray-100">
                   <button onClick={() => openModal("dang-no")} className="flex items-center gap-2 text-xs font-medium text-orange-600 hover:underline"><Eye size={14}/> Xem danh sách nợ</button>
               </div>
           </div>
@@ -279,10 +289,10 @@ export default function QuanLyThuPhi() {
 
       {/* SEARCH */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex gap-4">
-         <div className="flex-1 relative">
+          <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20}/>
             <input placeholder="Tìm kiếm phiếu thu theo tên chủ hộ hoặc kỳ thu..." className="w-full pl-10 pr-4 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-         </div>
+          </div>
       </div>
 
       {/* MAIN TABLE */}
@@ -307,35 +317,28 @@ export default function QuanLyThuPhi() {
                 ) : filteredData.map((item: any) => (
                     <tr key={item._id || item.id} className="hover:bg-gray-50 transition-colors group">
                         <td className="p-4 text-gray-400 font-mono text-xs">#{ (item.maPhieuThu || item._id).slice(-8).toUpperCase() }</td>
-                        <td className="p-4"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs">{item.tenChuHo?.charAt(0)}</div><span className="font-medium text-gray-700">{item.tenChuHo}</span></div></td>
+                        <td className="p-4 font-medium text-gray-700">{item.tenChuHo}</td>
                         <td className="p-4 text-gray-600">{item.kyThu}</td>
                         <td className="p-4">
                             <div className="flex flex-wrap gap-1">
                                 {item.chiTietThu?.map((ct: any, idx: number) => (
-                                    <span key={idx} className="px-2 py-0.5 bg-gray-100 border rounded text-[10px] text-gray-600 truncate max-w-[120px]">
+                                    <span key={idx} className="px-2 py-0.5 bg-gray-100 border rounded text-[10px] text-gray-600">
                                         {ct.tenKhoanThu}
                                     </span>
                                 ))}
                             </div>
                         </td>
                         <td className={`p-4 text-right font-bold ${item.trangThai === "Đã thu" ? "text-green-600" : "text-orange-500"}`}>
-                            {Number(item.tongTien).toLocaleString()} ₫
+                            {Number(item.tongTien).toLocaleString()} VNĐ
                         </td>
                         <td className="p-4 text-gray-500">{new Date(item.ngayThu).toLocaleDateString("vi-VN")}</td>
-
                         <td className="p-4 text-center">
-                            {item.trangThai === "Đã thu" ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 rounded-full text-[10px] font-bold border border-green-200">
-                                    <CheckCircle size={12}/> Đã nộp
-                                </span>
-                            ) : (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-700 rounded-full text-[10px] font-bold border border-orange-200">
-                                    <Clock size={12}/> Chưa nộp
-                                </span>
-                            )}
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border ${item.trangThai === "Đã thu" ? "bg-green-50 text-green-700 border-green-200" : "bg-orange-50 text-orange-700 border-orange-200"}`}>
+                                {item.trangThai === "Đã thu" ? <CheckCircle size={12}/> : <Clock size={12}/>} {item.trangThai}
+                            </span>
                         </td>
                         <td className="p-4 text-center">
-                            <button onClick={() => handleDeletePhieu(item)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all opacity-0 group-hover:opacity-100" title="Xóa phiếu thu này"><Trash2 size={16} /></button>
+                            <button onClick={() => handleDeletePhieu(item)} className="p-2 text-gray-400 hover:text-red-600 rounded-full transition-all opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
                         </td>
                     </tr>
                 ))}
@@ -354,7 +357,7 @@ export default function QuanLyThuPhi() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Tên khoản thu/Quỹ (*)</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Tên khoản thu (*)</label>
                 <input type="text" className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" value={formData.tenKhoanThu} onChange={e => setFormData({...formData, tenKhoanThu: e.target.value})} />
               </div>
               <div>
@@ -363,12 +366,12 @@ export default function QuanLyThuPhi() {
               </div>
               {addType === "Bắt buộc" && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Số tiền cố định (₫)</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Số tiền cố định (VNĐ)</label>
                   <input type="number" className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500" value={formData.soTien} onChange={e => setFormData({...formData, soTien: e.target.value})} />
                 </div>
               )}
               <div className="flex gap-3 pt-4">
-                <button onClick={() => setIsAddModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold">Hủy</button>
+                <button onClick={() => setIsAddModalOpen(false)} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg">Hủy</button>
                 <button onClick={handleConfirmAdd} disabled={createKhoanThuMutation.isPending} className={`flex-1 py-2 text-white rounded-lg font-bold ${addType === "Bắt buộc" ? "bg-blue-600" : "bg-rose-500"}`}>
                   {createKhoanThuMutation.isPending ? "Đang tạo..." : "Xác nhận"}
                 </button>
@@ -383,10 +386,7 @@ export default function QuanLyThuPhi() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
                 <div className={`px-6 py-4 border-b flex justify-between items-center ${detailModal.type === "bat-buoc" ? "bg-blue-50" : detailModal.type === "dang-no" ? "bg-orange-50" : "bg-rose-50"} rounded-t-2xl`}>
-                    <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-bold text-gray-800">{detailModal.title}</h3>
-                        <span className="px-2 py-0.5 bg-white rounded-full text-xs font-bold text-gray-500">{detailModal.data.length} mục</span>
-                    </div>
+                    <h3 className="text-lg font-bold text-gray-800">{detailModal.title}</h3>
                     <button onClick={() => setDetailModal(prev => ({ ...prev, isOpen: false }))} className="p-2 hover:bg-white/50 rounded-full"><X size={24}/></button>
                 </div>
                 <div className="overflow-y-auto p-6">
@@ -400,7 +400,7 @@ export default function QuanLyThuPhi() {
                                     <td className="p-3 text-gray-500">{new Date(row.ngayThu).toLocaleDateString("vi-VN")}</td>
                                     <td className="p-3 font-medium text-gray-800">{row.tenChuHo}</td>
                                     <td className="p-3 text-gray-600">{row.tenKhoanThu}</td>
-                                    <td className="p-3 text-right font-bold">{row.soTien.toLocaleString()} ₫</td>
+                                    <td className="p-3 text-right font-bold">{row.soTien.toLocaleString()} VNĐ</td>
                                     <td className="p-3 text-gray-400 italic text-center">{row.ghiChu || "-"}</td>
                                 </tr>
                             ))}
