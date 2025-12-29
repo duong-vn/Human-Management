@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { CreateHoKhauDto } from './dto/create-ho-khau.dto';
+import { CreateHoKhauDto, ThanhVien } from './dto/create-ho-khau.dto';
 import { UpdateHoKhauDto } from './dto/update-ho-khau.dto';
 import {
   HoKhau,
@@ -113,25 +113,62 @@ export class HoKhauService {
     hoKhauGocId: string;
     chuHoMoi: { nhanKhauId: string; hoTen: string };
     diaChi: any;
-    danhSachNhanKhauId: string[]; // Danh sách nhân khẩu chuyển sang hộ mới
+    danhSachNhanKhauMoi: ThanhVien[]; // Danh sách nhân khẩu chuyển sang hộ mới
+    chuHoMoiChoHoGoc?: { nhanKhauId: string; hoTen: string }; // Chủ hộ mới cho hộ gốc nếu chủ hộ cũ bị tách
     nguoiThucHien: string;
   }): Promise<HoKhau> {
     const hoKhauGoc = await this.hoKhauModel.findById(data.hoKhauGocId);
     if (!hoKhauGoc) {
       throw new NotFoundException('Không tìm thấy hộ khẩu gốc');
     }
+
     const thanhVienGoc = hoKhauGoc.thanhVien.map((tv) =>
       tv.nhanKhauId.toString(),
     );
-    // Kiểm tra mã hộ khẩu mới đã tồn tại chưa
-    const isHopLe = data.danhSachNhanKhauId.every((id) =>
-      thanhVienGoc.includes(id),
+
+    // Kiểm tra danh sách nhân khẩu hợp lệ
+    const isHopLe = data.danhSachNhanKhauMoi.every((tv) =>
+      thanhVienGoc.includes(tv.nhanKhauId),
     );
     if (!isHopLe) {
       throw new BadRequestException(
         'Danh sách nhân khẩu không hợp lệ hoặc không thuộc hộ khẩu gốc',
       );
     }
+
+    // Kiểm tra xem chủ hộ có nằm trong danh sách tách không
+    const chuHoGocId = hoKhauGoc?.chuHo?.nhanKhauId?.toString();
+    const chuHoBiTach = data.danhSachNhanKhauMoi.some(
+      (tv) => tv.nhanKhauId === chuHoGocId,
+    );
+
+    // Tính toán thành viên còn lại trong hộ gốc
+    const thanhVienConLai = hoKhauGoc.thanhVien.filter(
+      (tv) =>
+        !data.danhSachNhanKhauMoi.some(
+          (dtv) => dtv.nhanKhauId === tv.nhanKhauId.toString(),
+        ),
+    );
+
+    // Nếu chủ hộ bị tách và còn thành viên ở lại, phải có chủ hộ mới cho hộ gốc
+    if (chuHoBiTach && thanhVienConLai.length > 0) {
+      if (!data.chuHoMoiChoHoGoc || !data.chuHoMoiChoHoGoc.nhanKhauId) {
+        throw new BadRequestException(
+          'Chủ hộ hiện tại nằm trong danh sách tách hộ. Vui lòng chỉ định chủ hộ mới cho hộ gốc.',
+        );
+      }
+
+      // Kiểm tra chủ hộ mới phải là thành viên còn lại trong hộ gốc
+      const chuHoMoiHopLe = thanhVienConLai.some(
+        (tv) => tv.nhanKhauId.toString() === data?.chuHoMoiChoHoGoc?.nhanKhauId,
+      );
+      if (!chuHoMoiHopLe) {
+        throw new BadRequestException(
+          'Chủ hộ mới cho hộ gốc phải là thành viên còn lại trong hộ.',
+        );
+      }
+    }
+
     // Tạo hộ khẩu mới
     const hoKhauMoi = new this.hoKhauModel({
       chuHo: {
@@ -139,8 +176,13 @@ export class HoKhauService {
         hoTen: data.chuHoMoi.hoTen,
       },
       diaChi: data.diaChi,
-      thanhVien: data.danhSachNhanKhauId.map((id) => ({
-        nhanKhauId: new Types.ObjectId(id),
+      thanhVien: data.danhSachNhanKhauMoi.map((tv) => ({
+        nhanKhauId: new Types.ObjectId(tv.nhanKhauId),
+        hoTen: tv.hoTen,
+        quanHeVoiChuHo:
+          tv.nhanKhauId === data.chuHoMoi.nhanKhauId
+            ? 'Chủ hộ'
+            : tv.quanHeVoiChuHo || 'Khác',
       })),
       ngayLap: new Date(),
       trangThai: 'Đang hoạt động',
@@ -156,7 +198,10 @@ export class HoKhauService {
     const savedHoKhauMoi = await hoKhauMoi.save();
 
     const nhanKhauChuyenSangHoMoiIds = Array.from(
-      new Set([...(data.danhSachNhanKhauId || []), data.chuHoMoi.nhanKhauId]),
+      new Set([
+        ...(data.danhSachNhanKhauMoi || []).map((tv) => tv.nhanKhauId),
+        data.chuHoMoi.nhanKhauId,
+      ]),
     ).map((id) => new Types.ObjectId(id));
 
     await this.nhanKhauModel.updateMany(
@@ -166,21 +211,78 @@ export class HoKhauService {
 
     // Cập nhật lịch sử hộ khẩu gốc
     const lichSuGoc: LichSuThayDoiHoKhau = {
-      noiDung: `Tách hộ sang hộ khẩu mới:  ${savedHoKhauMoi._id}`,
+      noiDung: `Tách hộ sang hộ khẩu mới: ${savedHoKhauMoi._id}`,
       ngayThayDoi: new Date(),
       nguoiThucHien: data.nguoiThucHien,
     };
 
+    // Cập nhật hộ khẩu gốc: xóa thành viên đã tách
     await this.hoKhauModel.findByIdAndUpdate(data.hoKhauGocId, {
       $push: { lichSuThayDoi: lichSuGoc },
       $pull: {
         thanhVien: {
           nhanKhauId: {
-            $in: data.danhSachNhanKhauId.map((id) => new Types.ObjectId(id)),
+            $in: data.danhSachNhanKhauMoi.map(
+              (tv) => new Types.ObjectId(tv.nhanKhauId),
+            ),
           },
         },
       },
     });
+
+    // Nếu chủ hộ bị tách và còn thành viên ở lại, cập nhật chủ hộ mới cho hộ gốc
+    if (chuHoBiTach && thanhVienConLai.length > 0 && data.chuHoMoiChoHoGoc) {
+      const lichSuDoiChuHo: LichSuThayDoiHoKhau = {
+        noiDung: `Đổi chủ hộ từ "${hoKhauGoc.chuHo.hoTen}" sang "${data.chuHoMoiChoHoGoc.hoTen}" do tách hộ`,
+        ngayThayDoi: new Date(),
+        nguoiThucHien: data.nguoiThucHien,
+      };
+
+      // Cập nhật chủ hộ mới
+      await this.hoKhauModel.findByIdAndUpdate(data.hoKhauGocId, {
+        $set: {
+          chuHo: {
+            nhanKhauId: new Types.ObjectId(data.chuHoMoiChoHoGoc.nhanKhauId),
+            hoTen: data.chuHoMoiChoHoGoc.hoTen,
+          },
+        },
+        $push: { lichSuThayDoi: lichSuDoiChuHo },
+      });
+
+      // Cập nhật quan hệ của các thành viên còn lại với chủ hộ mới
+      // Chủ hộ mới -> quanHeVoiChuHo = "Chủ hộ"
+      await this.hoKhauModel.findByIdAndUpdate(
+        data.hoKhauGocId,
+        {
+          $set: {
+            'thanhVien.$[elem].quanHeVoiChuHo': 'Chủ hộ',
+          },
+        },
+        {
+          arrayFilters: [
+            {
+              'elem.nhanKhauId': new Types.ObjectId(
+                data.chuHoMoiChoHoGoc.nhanKhauId,
+              ),
+            },
+          ],
+        },
+      );
+    }
+
+    // Nếu chủ hộ bị tách và không còn thành viên nào, đánh dấu hộ gốc là "Đã tách hộ"
+    if (chuHoBiTach && thanhVienConLai.length === 0) {
+      await this.hoKhauModel.findByIdAndUpdate(data.hoKhauGocId, {
+        $set: { trangThai: 'Đã tách hộ' },
+        $push: {
+          lichSuThayDoi: {
+            noiDung: 'Hộ khẩu đã tách hoàn toàn, không còn thành viên',
+            ngayThayDoi: new Date(),
+            nguoiThucHien: data.nguoiThucHien,
+          },
+        },
+      });
+    }
 
     return hoKhauMoi;
   }

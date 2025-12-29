@@ -73,7 +73,15 @@ export interface TachHoParams {
     hoTen: string;
   };
   diaChi: DiaChi;
-  danhSachNhanKhauId: string[];
+  danhSachNhanKhauMoi: {
+    nhanKhauId: string;
+    hoTen: string;
+    quanHeVoiChuHo: string;
+  }[];
+  chuHoMoiChoHoGoc?: {
+    nhanKhauId: string;
+    hoTen: string;
+  };
 }
 
 // Params cho API đổi chủ hộ

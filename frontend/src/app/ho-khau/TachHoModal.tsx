@@ -36,6 +36,9 @@ export default function TachHoModal({
   const [chuHoMoiId, setChuHoMoiId] = useState("");
   const [chuHoMoiTen, setChuHoMoiTen] = useState("");
   const [diaChi, setDiaChi] = useState<DiaChi>(defaultDiaChi);
+  // Chủ hộ mới cho hộ gốc (khi chủ hộ hiện tại bị tách)
+  const [chuHoMoiChoHoGocId, setChuHoMoiChoHoGocId] = useState("");
+  const [chuHoMoiChoHoGocTen, setChuHoMoiChoHoGocTen] = useState("");
 
   useEffect(() => {
     if (isOpen) {
@@ -43,6 +46,8 @@ export default function TachHoModal({
       setChuHoMoiId("");
       setChuHoMoiTen("");
       setDiaChi(defaultDiaChi);
+      setChuHoMoiChoHoGocId("");
+      setChuHoMoiChoHoGocTen("");
     }
   }, [isOpen]);
 
@@ -58,6 +63,11 @@ export default function TachHoModal({
         if (chuHoMoiId === nkId) {
           setChuHoMoiId("");
           setChuHoMoiTen("");
+        }
+        // Nếu bỏ chọn người được chọn làm chủ hộ mới cho hộ gốc
+        if (chuHoMoiChoHoGocId === nkId) {
+          setChuHoMoiChoHoGocId("");
+          setChuHoMoiChoHoGocTen("");
         }
         return prev.filter((id) => id !== nkId);
       } else {
@@ -89,6 +99,23 @@ export default function TachHoModal({
       return;
     }
 
+    // Kiểm tra xem chủ hộ hiện tại có bị tách không
+    const chuHoHienTaiId = getChuHoHienTaiId();
+    const chuHoBiTach = selectedNhanKhauIds.includes(chuHoHienTaiId);
+    const thanhVienConLai = thanhVienList.filter((tv) => {
+      const id =
+        typeof tv.nhanKhauId === "object" ? tv.nhanKhauId._id : tv.nhanKhauId;
+      return !selectedNhanKhauIds.includes(id);
+    });
+
+    // Nếu chủ hộ bị tách và còn thành viên ở lại, phải chọn chủ hộ mới cho hộ gốc
+    if (chuHoBiTach && thanhVienConLai.length > 0 && !chuHoMoiChoHoGocId) {
+      alert(
+        "Chủ hộ hiện tại nằm trong danh sách tách. Vui lòng chọn chủ hộ mới cho hộ gốc!"
+      );
+      return;
+    }
+
     const data: TachHoParams = {
       hoKhauGocId: hoKhauId,
       chuHoMoi: {
@@ -96,7 +123,27 @@ export default function TachHoModal({
         hoTen: chuHoMoiTen,
       },
       diaChi,
-      danhSachNhanKhauId: selectedNhanKhauIds.filter((id) => id !== chuHoMoiId), // Loại chủ hộ mới ra khỏi danh sách thành viên
+      danhSachNhanKhauMoi: selectedNhanKhauIds.map((nkId) => {
+        const tv = thanhVienList.find((t) => {
+          const id =
+            typeof t.nhanKhauId === "object" ? t.nhanKhauId._id : t.nhanKhauId;
+          return id === nkId;
+        });
+        return {
+          nhanKhauId: nkId,
+          hoTen: tv?.hoTen || "",
+          quanHeVoiChuHo:
+            nkId === chuHoMoiId ? "Chủ hộ" : tv?.quanHeVoiChuHo || "Khác",
+        };
+      }),
+      ...(chuHoBiTach && thanhVienConLai.length > 0 && chuHoMoiChoHoGocId
+        ? {
+            chuHoMoiChoHoGoc: {
+              nhanKhauId: chuHoMoiChoHoGocId,
+              hoTen: chuHoMoiChoHoGocTen,
+            },
+          }
+        : {}),
     };
 
     onSubmit(data);
@@ -104,6 +151,22 @@ export default function TachHoModal({
 
   // Lấy danh sách thành viên có thể tách
   const thanhVienList = hoKhau.thanhVien || [];
+
+  // Lấy ID chủ hộ hiện tại
+  const getChuHoHienTaiId = () => {
+    return typeof hoKhau.chuHo.nhanKhauId === "object"
+      ? hoKhau.chuHo.nhanKhauId._id
+      : hoKhau.chuHo.nhanKhauId || "";
+  };
+
+  // Kiểm tra xem chủ hộ có bị tách không
+  const chuHoHienTaiId = getChuHoHienTaiId();
+  const chuHoBiTach = selectedNhanKhauIds.includes(chuHoHienTaiId);
+  const thanhVienConLai = thanhVienList.filter((tv) => {
+    const id =
+      typeof tv.nhanKhauId === "object" ? tv.nhanKhauId._id : tv.nhanKhauId;
+    return !selectedNhanKhauIds.includes(id);
+  });
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -250,6 +313,63 @@ export default function TachHoModal({
                       </option>
                     );
                   })}
+              </select>
+            </div>
+          )}
+
+          {/* Bước 2.5: Chọn chủ hộ mới cho hộ gốc (nếu chủ hộ hiện tại bị tách) */}
+          {chuHoBiTach && thanhVienConLai.length > 0 && (
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+              <h3 className="text-sm font-semibold text-yellow-800 mb-2 flex items-center gap-2">
+                <Users size={16} />
+                ⚠️ Chọn chủ hộ mới cho hộ gốc
+              </h3>
+              <p className="text-xs text-yellow-700 mb-3">
+                Chủ hộ hiện tại ({hoKhau.chuHo.hoTen}) nằm trong danh sách tách.
+                Vui lòng chọn chủ hộ mới cho hộ khẩu gốc từ những người còn lại.
+              </p>
+              <select
+                value={chuHoMoiChoHoGocId}
+                onChange={(e) => {
+                  const selected = thanhVienConLai.find((tv) => {
+                    const id =
+                      typeof tv.nhanKhauId === "object"
+                        ? tv.nhanKhauId._id
+                        : tv.nhanKhauId;
+                    return id === e.target.value;
+                  });
+                  if (selected) {
+                    const hoTen =
+                      typeof selected.nhanKhauId === "object" &&
+                      selected.nhanKhauId.hoTen
+                        ? selected.nhanKhauId.hoTen
+                        : selected.hoTen;
+                    setChuHoMoiChoHoGocId(e.target.value);
+                    setChuHoMoiChoHoGocTen(hoTen);
+                  } else {
+                    setChuHoMoiChoHoGocId("");
+                    setChuHoMoiChoHoGocTen("");
+                  }
+                }}
+                className="w-full border border-yellow-300 rounded-xl p-3 bg-white focus:ring-2 focus:ring-yellow-500/20 focus:border-yellow-500 transition"
+                required
+              >
+                <option value="">-- Chọn chủ hộ mới cho hộ gốc --</option>
+                {thanhVienConLai.map((tv) => {
+                  const id =
+                    typeof tv.nhanKhauId === "object"
+                      ? tv.nhanKhauId._id
+                      : tv.nhanKhauId;
+                  const hoTen =
+                    typeof tv.nhanKhauId === "object" && tv.nhanKhauId.hoTen
+                      ? tv.nhanKhauId.hoTen
+                      : tv.hoTen;
+                  return (
+                    <option key={id} value={id}>
+                      {hoTen} ({tv.quanHeVoiChuHo})
+                    </option>
+                  );
+                })}
               </select>
             </div>
           )}

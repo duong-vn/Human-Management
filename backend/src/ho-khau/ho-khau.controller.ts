@@ -11,7 +11,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { HoKhauService } from './ho-khau.service';
-import { CreateHoKhauDto, DiaChi } from './dto/create-ho-khau.dto';
+import { CreateHoKhauDto, DiaChi, ThanhVien } from './dto/create-ho-khau.dto';
 import { UpdateHoKhauDto } from './dto/update-ho-khau.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -87,10 +87,22 @@ export class HoKhauController {
           quanHuyen: 'Quận 3',
           tinhThanh: 'TP. Hồ Chí Minh',
         },
-        danhSachNhanKhauId: [
-          '694cb3d6ab52b519fd76b918',
-          '6926c6af840b406838006a28',
+        danhSachNhanKhauMoi: [
+          {
+            nhanKhauId: '694cb3d6ab52b519fd76b918',
+            hoTen: 'Nguyễn Văn A',
+            quanHeVoiChuHo: 'Chủ hộ',
+          },
+          {
+            nhanKhauId: '6926c6af840b406838006a28',
+            hoTen: 'Trần Thị B',
+            quanHeVoiChuHo: 'Vợ',
+          },
         ],
+        chuHoMoiChoHoGoc: {
+          nhanKhauId: '694cb9093eeb3ec342ef4d0e',
+          hoTen: 'Vợ của Nguyễn Tuấn Dương',
+        },
       },
     },
   })
@@ -100,7 +112,8 @@ export class HoKhauController {
       hoKhauGocId: string;
       chuHoMoi: { nhanKhauId: string; hoTen: string };
       diaChi: DiaChi;
-      danhSachNhanKhauId: string[];
+      danhSachNhanKhauMoi: ThanhVien[];
+      chuHoMoiChoHoGoc?: { nhanKhauId: string; hoTen: string };
     },
     @Request() req,
   ) {
