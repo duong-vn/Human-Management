@@ -4,11 +4,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAllHoKhau,
   createPhieuThu,
-  getAllKhoanThu,
   createKhoanThu,
   getAllThuPhi,
   updatePhieuThu,
-  deleteKhoanThu // 👈 Import hàm xóa
+  deleteKhoanThu,
+  getKhoanThuTuNguyen // 👈 QUAN TRỌNG: Đảm bảo đã có hàm này trong api.ts
 } from "../api";
 import {
   Heart,
@@ -19,7 +19,7 @@ import {
   CheckCircle,
   Clock,
   DollarSign,
-  Trash2 // 👈 Import icon thùng rác
+  Trash2
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -40,10 +40,13 @@ export default function QuanLyDongGop() {
   const [donationStatus, setDonationStatus] = useState("Đã thu");
 
   // 1. DATA FETCHING
+
+  // 👇 SỬA LẠI: Lấy danh sách khoản thu TỰ NGUYỆN từ API riêng
   const { data: dsKhoanThu = [] } = useQuery({
-    queryKey: ["khoan-thu"],
+    queryKey: ["khoan-thu-tu-nguyen"], // Đặt key riêng biệt
     queryFn: async () => {
-        const res = await getAllKhoanThu();
+        // Gọi API chuyên biệt cho tự nguyện
+        const res = await getKhoanThuTuNguyen();
         return Array.isArray(res) ? res : res?.data || [];
     }
   });
@@ -93,15 +96,16 @@ export default function QuanLyDongGop() {
   const createCampaignMutation = useMutation({
     mutationFn: async () => await createKhoanThu({
         tenKhoanThu: newCampaignName,
-        soTien: 0,
-        loaiKhoanThu: "Đóng góp",
+        soTien: 0, // Tự nguyện thường không có định mức cố định
+        loaiKhoanThu: "Tự nguyện", // 👈 QUAN TRỌNG: Phải lưu đúng loại này
         moTa: "Chiến dịch quyên góp tự nguyện"
     }),
     onSuccess: () => {
         toast.success("Tạo chiến dịch thành công!");
         setIsCreateCampaignOpen(false);
         setNewCampaignName("");
-        queryClient.invalidateQueries({ queryKey: ["khoan-thu"] });
+        // 👇 Làm mới đúng key cache
+        queryClient.invalidateQueries({ queryKey: ["khoan-thu-tu-nguyen"] });
     }
   });
 
@@ -159,13 +163,13 @@ export default function QuanLyDongGop() {
     mutationFn: async (id: string) => await deleteKhoanThu(id),
     onSuccess: () => {
       toast.success("Đã xóa chiến dịch thành công!");
-      queryClient.invalidateQueries({ queryKey: ["khoan-thu"] });
+      // 👇 Làm mới đúng key cache
+      queryClient.invalidateQueries({ queryKey: ["khoan-thu-tu-nguyen"] });
     },
     onError: (err: any) => toast.error("Không thể xóa: " + err.message)
   });
 
-const handleDeleteCampaign = (id: string, hasDonations: boolean) => {
-    // 👇 1. Phải khai báo biến message ở đây trước khi dùng
+  const handleDeleteCampaign = (id: string, hasDonations: boolean) => {
     const message = hasDonations
       ? "Chiến dịch này ĐÃ CÓ dữ liệu thu chi. Việc xóa có thể làm mất lịch sử đóng góp. Bạn chắc chắn chứ?"
       : "Bạn có chắc chắn muốn xóa chiến dịch này không?";
@@ -176,7 +180,6 @@ const handleDeleteCampaign = (id: string, hasDonations: boolean) => {
         label: "Vẫn xóa",
         onClick: () => deleteCampaignMutation.mutate(id),
       },
-      // 👇 2. Thêm onClick: () => {} để hết báo đỏ
       cancel: {
         label: "Hủy",
         onClick: () => {},
@@ -185,14 +188,13 @@ const handleDeleteCampaign = (id: string, hasDonations: boolean) => {
     });
   };
 
-const handleConfirmPay = (pId: string) => {
+  const handleConfirmPay = (pId: string) => {
     toast("Xác nhận thu tiền?", {
         description: "Hành động này sẽ cập nhật trạng thái thành 'Đã thu'.",
         action: {
             label: "Xác nhận",
             onClick: () => payMutation.mutate(pId),
         },
-        // 👇 Thêm onClick: () => {} vào đây
         cancel: {
             label: "Hủy",
             onClick: () => {},
@@ -269,7 +271,7 @@ const handleConfirmPay = (pId: string) => {
                                 {/* 👇 NÚT XÓA CHIẾN DỊCH */}
                                 <button
                                     onClick={(e) => {
-                                        e.stopPropagation(); // Ngăn chặn mở Accordion khi bấm xóa
+                                        e.stopPropagation();
                                         handleDeleteCampaign(campId, hasDonations);
                                     }}
                                     className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"

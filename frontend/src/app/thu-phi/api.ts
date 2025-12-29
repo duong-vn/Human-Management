@@ -51,3 +51,18 @@ export const deleteKhoanThu = async (id: string) => {
   const res = await api.delete(`/khoan-thu/${id}`);
   return res.data;
 };
+
+export const getKhoanThuBatBuoc = async () => {
+  const res = await api.get("/khoan-thu/bat-buoc");
+  return res.data;
+};
+
+export const getKhoanThuTuNguyen = async () => {
+  const res = await api.get("/khoan-thu/tu-nguyen");
+  return res.data;
+};
+
+export const deletePhieuThu = async (id: string) => {
+  const res = await api.delete(`/thu-phi/${id}`);
+  return res.data;
+};
