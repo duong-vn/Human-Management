@@ -14,56 +14,45 @@ export default function ThongKePage() {
   const [selectedDot, setSelectedDot] = useState<string | null>(null);
   const [chiTietHoDaNop, setChiTietHoDaNop] = useState<any[] | null>(null);
   const [chiTietLoading, setChiTietLoading] = useState(false);
+  const [chiTietFilterText, setChiTietFilterText] = useState<string>('');
+  const [chiTietFilterStatus, setChiTietFilterStatus] = useState<string>('all');
   const [selectedHo, setSelectedHo] = useState<any | null>(null);
   const [lichSuHo, setLichSuHo] = useState<any | null>(null);
   const [lichSuLoading, setLichSuLoading] = useState(false);
+  const [lichSuFilterText, setLichSuFilterText] = useState<string>('');
+  const [lichSuFilterStatus, setLichSuFilterStatus] = useState<string>('all');
+  const [selectedPhieu, setSelectedPhieu] = useState<any | null>(null);
 
   // Add CSS for animations
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
-      @keyframes slideIn {
-        from {
-          opacity: 0;
-          transform: translateY(10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
-      }
-      .animate-slide-in {
-        animation: slideIn 0.3s ease-out;
-      }
-      .animate-fade-in {
-        animation: fadeIn 0.4s ease-out;
-      }
-      .animate-pulse-light {
-        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-      }
+      @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+      @keyframes underlineGrow { from { transform: scaleX(0); opacity: 0.4; } to { transform: scaleX(1); opacity: 1; } }
+      .animate-slide-in { animation: slideIn 0.32s ease-out; }
+      .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+      .animate-pulse-light { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+      .heading-emoji { display: inline-block; transition: transform 220ms ease; }
+      .heading-emoji:hover { transform: translateY(-4px) rotate(-8deg); }
+      .heading-underline { transform-origin: left; transform: scaleX(0); animation: underlineGrow 600ms cubic-bezier(0.2,0.8,0.2,1) forwards; }
     `;
     document.head.appendChild(style);
   }, []);
 
+  // Fetch list of đợt thu
   const fetchDotThu = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const data = await getDanhSachDotThu(nam);
-    console.log('getDanhSachDotThu response:', data);
-    if (data && Array.isArray(data)) {
-      setDotThu(data);
-    } else if (data === null) {
-      setError('Lỗi khi tải dữ liệu đợt thu');
-      setDotThu([]);
-    } else {
+    try {
+      const data = await getDanhSachDotThu(nam);
+      console.log('getDanhSachDotThu response:', data);
+      if (Array.isArray(data)) setDotThu(data);
+      else setDotThu([]);
+    } catch (err) {
+      console.error(err);
+      setError('Lỗi khi tải danh sách đợt thu');
       setDotThu([]);
     }
     setLoading(false);
@@ -73,12 +62,41 @@ export default function ThongKePage() {
     fetchDotThu();
   }, [fetchDotThu]);
 
+  // Refresh data when selectedHo/selectedDot/nam changes
+  useEffect(() => {
+    let mounted = true;
+    const refresh = async () => {
+      if (selectedHo) {
+        setLichSuLoading(true);
+        const data = await getLichSuHo(selectedHo, nam);
+        if (!mounted) return;
+        setLichSuHo(data || null);
+        setLichSuLoading(false);
+      }
+      if (selectedDot) {
+        setChiTietLoading(true);
+        const data = await getChiTietHoDaNop(selectedDot, nam);
+        if (!mounted) return;
+        setChiTietHoDaNop(Array.isArray(data) ? data : []);
+        setChiTietLoading(false);
+      }
+    };
+
+    refresh();
+    return () => {
+      mounted = false;
+    };
+  }, [selectedHo, selectedDot, nam]);
+
   const openDotDetails = async (kyThu: string) => {
     setChiTietLoading(true);
     setSelectedDot(kyThu);
     const data = await getChiTietHoDaNop(kyThu, nam);
     console.log('getChiTietHoDaNop response:', data);
     setChiTietHoDaNop(Array.isArray(data) ? data : []);
+    // reset filters when opening a dot
+    setChiTietFilterText('');
+    setChiTietFilterStatus('all');
     setChiTietLoading(false);
   };
 
@@ -98,8 +116,17 @@ export default function ThongKePage() {
     const data = await getLichSuHo(hoKhauId, nam);
     console.log('getLichSuHo response:', data);
     setLichSuHo(data || null);
+    // reset filters when opening household
+    setLichSuFilterText('');
+    setLichSuFilterStatus('all');
     setLichSuLoading(false);
   };
+
+  const openPhieuDetails = (phieu: any) => {
+    setSelectedPhieu(phieu);
+  };
+
+  const closePhieuDetails = () => setSelectedPhieu(null);
 
   // Helper to format numbers as VND
   const formatVND = (v: any) => {
@@ -113,9 +140,11 @@ export default function ThongKePage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6">
       {/* Header */}
       <div className="animate-slide-in mb-8">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-          📊 Thống kê thu phí
+        <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
+          <span className="heading-emoji text-4xl">📊</span>
+          <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Thống kê thu phí</span>
         </h1>
+        <div className="heading-underline bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full h-1 w-40 mb-2"></div>
         <p className="text-gray-600">Quản lý và theo dõi tình hình thu tiền</p>
       </div>
 
@@ -132,7 +161,9 @@ export default function ThongKePage() {
             />
           </div>
           <button
-            onClick={fetchDotThu}
+            onClick={() => getDanhSachDotThu(nam).then((data) => {
+              if (data) setDotThu(data);
+            })}
             className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold px-6 py-2 rounded-lg hover:shadow-lg transition-all transform hover:scale-105 active:scale-95"
           >
             ⟳ Tải dữ liệu
@@ -199,6 +230,14 @@ export default function ThongKePage() {
                       {d.soHoDaNop ?? d.soHo ?? 0} hộ
                     </span>
                   </div>
+                  {typeof d.soHoChuaNop !== 'undefined' && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600 text-sm">🚫 Số hộ chưa nộp</span>
+                      <span className="font-semibold text-lg text-rose-600">
+                        {d.soHoChuaNop ?? 0} hộ
+                      </span>
+                    </div>
+                  )}
 
                   {/* Progress Bar */}
                   <div className="mt-4 pt-3 border-t border-gray-200">
@@ -251,41 +290,85 @@ export default function ThongKePage() {
           )}
 
           {chiTietHoDaNop && chiTietHoDaNop.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gradient-to-r from-amber-50 to-orange-50 border-b-2 border-amber-200">
-                    <th className="text-left p-3 font-semibold text-gray-700">Mã phiếu</th>
-                    <th className="text-left p-3 font-semibold text-gray-700">Chủ hộ</th>
-                    <th className="text-left p-3 font-semibold text-gray-700">Địa chỉ</th>
-                    <th className="text-left p-3 font-semibold text-gray-700">Tổng tiền</th>
-                    <th className="text-center p-3 font-semibold text-gray-700">Hành động</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {chiTietHoDaNop.map((pt: any, idx: number) => (
-                    <tr
-                      key={pt._id}
-                      className="border-b border-gray-200 hover:bg-amber-50 transition-colors"
-                    >
-                      <td className="p-3 font-mono text-sm text-blue-600">{pt.maPhieuThu}</td>
-                      <td className="p-3 font-semibold text-gray-800">{pt.tenChuHo}</td>
-                      <td className="p-3 text-gray-600 text-sm">{pt.diaChi}</td>
-                      <td className="p-3 font-bold text-green-600">
-                        {pt.tongTien?.toLocaleString?.('vi-VN') ?? pt.tongTien} đ
-                      </td>
-                      <td className="p-3 text-center">
-                        <button
-                          onClick={() => openHoDetails(pt.hoKhauId?._id ?? pt.hoKhauId)}
-                          className="inline-block bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-3 py-1 rounded-lg text-sm font-semibold hover:shadow-lg transition-all transform hover:scale-105 active:scale-95"
-                        >
-                          Lịch sử
-                        </button>
-                      </td>
+            <div>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    placeholder="Tìm theo tên / mã hộ"
+                    value={chiTietFilterText}
+                    onChange={(e) => setChiTietFilterText(e.target.value)}
+                    className="border px-3 py-2 rounded-lg w-64"
+                  />
+                  <select
+                    value={chiTietFilterStatus}
+                    onChange={(e) => setChiTietFilterStatus(e.target.value)}
+                    className="border px-3 py-2 rounded-lg"
+                  >
+                    <option value="all">Tất cả trạng thái</option>
+                    <option value="da-nop">Đã thu</option>
+                    <option value="chua-nop">Chưa thu / Đang nợ</option>
+                  </select>
+                </div>
+                <div className="text-sm text-gray-500">Tổng: {chiTietHoDaNop.length} hộ</div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gradient-to-r from-amber-50 to-orange-50 border-b-2 border-amber-200">
+                      <th className="text-left p-3 font-semibold text-gray-700">Mã phiếu</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">Chủ hộ</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">Địa chỉ</th>
+                      <th className="text-left p-3 font-semibold text-gray-700">Tổng tiền</th>
+                      <th className="text-center p-3 font-semibold text-gray-700">Hành động</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {chiTietHoDaNop
+                      .filter((pt: any) => {
+                        const q = chiTietFilterText.trim().toLowerCase();
+                        if (q) {
+                          const name = (pt.tenChuHo || '').toString().toLowerCase();
+                          const code = (pt.maPhieuThu || '').toString().toLowerCase();
+                          const hid = (pt.hoKhauId?._id || pt.hoKhauId || '').toString().toLowerCase();
+                          if (!name.includes(q) && !code.includes(q) && !hid.includes(q)) return false;
+                        }
+                        if (chiTietFilterStatus === 'da-nop') return pt.trangThai === 'Đã thu';
+                        if (chiTietFilterStatus === 'chua-nop') return pt.trangThai !== 'Đã thu';
+                        return true;
+                      })
+                      .map((pt: any) => (
+                        <tr
+                          key={pt._id}
+                          className="border-b border-gray-200 hover:bg-amber-50 transition-colors"
+                        >
+                          <td className="p-3 font-mono text-sm text-blue-600">{pt.maPhieuThu}</td>
+                          <td className="p-3 font-semibold text-gray-800">{pt.tenChuHo}</td>
+                          <td className="p-3 text-gray-600 text-sm">{pt.diaChi}</td>
+                          <td className="p-3 font-bold text-green-600">
+                            {pt.tongTien?.toLocaleString?.('vi-VN') ?? pt.tongTien} đ
+                          </td>
+                          <td className="p-3 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => openPhieuDetails(pt)}
+                                className="inline-block bg-white border border-gray-200 text-gray-700 px-2 py-1 rounded-lg text-sm hover:shadow-sm transition"
+                              >
+                                Khoản
+                              </button>
+                              <button
+                                onClick={() => openHoDetails(pt.hoKhauId?._id ?? pt.hoKhauId)}
+                                className="inline-block bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-3 py-1 rounded-lg text-sm font-semibold hover:shadow-lg transition-all transform hover:scale-105 active:scale-95"
+                              >
+                                Lịch sử
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
@@ -364,58 +447,65 @@ export default function ThongKePage() {
           {/* Phieu Thu List */}
           <div>
             <h4 className="text-xl font-bold text-gray-800 mb-4">Danh sách phiếu thu</h4>
-            {lichSuHo.danhSachPhieuThu.length === 0 && (
-              <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <p className="text-gray-500">📭 Không có phiếu thu</p>
-              </div>
-            )}
-            {lichSuHo.danhSachPhieuThu.length > 0 && (
-              <div className="space-y-3">
-                {lichSuHo.danhSachPhieuThu.map((pt: any) => (
-                  <div
-                    key={pt._id}
-                    className={`rounded-lg border-l-4 p-4 ${pt.trangThai === 'Đã thu'
-                      ? 'bg-green-50 border-l-green-500'
-                      : 'bg-yellow-50 border-l-yellow-500'
-                      }`}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="font-bold text-gray-800">{pt.maPhieuThu}</p>
-                        <p className="text-sm text-gray-600">
-                          📅 {new Date(pt.ngayThu).toLocaleDateString('vi-VN')}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-lg text-green-600">
-                          {pt.tongTien?.toLocaleString?.('vi-VN') ?? pt.tongTien} đ
-                        </p>
-                        <span
-                          className={`inline-block text-xs font-semibold px-2 py-1 rounded-full mt-1 ${pt.trangThai === 'Đã thu'
-                            ? 'bg-green-200 text-green-800'
-                            : 'bg-yellow-200 text-yellow-800'
+            {(() => {
+              const danhSachPhieuThu = Array.isArray(lichSuHo?.danhSachPhieuThu) ? lichSuHo.danhSachPhieuThu : [];
+              return (
+                <>
+                  {danhSachPhieuThu.length === 0 && (
+                    <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                      <p className="text-gray-500">📭 Không có phiếu thu</p>
+                    </div>
+                  )}
+                  {danhSachPhieuThu.length > 0 && (
+                    <div className="space-y-3">
+                      {danhSachPhieuThu.map((pt: any) => (
+                        <div
+                          key={pt._id}
+                          className={`rounded-lg border-l-4 p-4 ${pt.trangThai === 'Đã thu'
+                            ? 'bg-green-50 border-l-green-500'
+                            : 'bg-yellow-50 border-l-yellow-500'
                             }`}
                         >
-                          {pt.trangThai}
-                        </span>
-                      </div>
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <p className="font-bold text-gray-800">{pt.maPhieuThu}</p>
+                              <p className="text-sm text-gray-600">
+                                📅 {new Date(pt.ngayThu).toLocaleDateString('vi-VN')}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-lg text-green-600">
+                                {formatVND(pt.tongTien)} đ
+                              </p>
+                              <span
+                                className={`inline-block text-xs font-semibold px-2 py-1 rounded-full mt-1 ${pt.trangThai === 'Đã thu'
+                                  ? 'bg-green-200 text-green-800'
+                                  : 'bg-yellow-200 text-yellow-800'
+                                  }`}
+                              >
+                                {pt.trangThai}
+                              </span>
+                            </div>
+                          </div>
+                          {pt.chiTietThu && pt.chiTietThu.length > 0 && (
+                            <div className="mt-3 pl-3 border-l-2 border-gray-200">
+                              {pt.chiTietThu.map((ct: any, idx: number) => (
+                                <p key={idx} className="text-sm text-gray-700 py-1">
+                                  • {ct.tenKhoanThu}:{' '}
+                                  <span className="font-semibold text-indigo-600">
+                                    {formatVND(ct.soTien)} đ
+                                  </span>
+                                </p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                    {pt.chiTietThu && pt.chiTietThu.length > 0 && (
-                      <div className="mt-3 pl-3 border-l-2 border-gray-200">
-                        {pt.chiTietThu.map((ct: any, idx: number) => (
-                          <p key={idx} className="text-sm text-gray-700 py-1">
-                            • {ct.tenKhoanThu}:{' '}
-                            <span className="font-semibold text-indigo-600">
-                              {ct.soTien?.toLocaleString?.('vi-VN')} đ
-                            </span>
-                          </p>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -427,6 +517,48 @@ export default function ThongKePage() {
               <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full"></div>
             </div>
             <p className="text-gray-700 font-semibold">Đang tải lịch sử nộp tiền...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Phiếu details modal */}
+      {selectedPhieu && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h4 className="text-lg font-bold">Chi tiết phiếu: {selectedPhieu.maPhieuThu}</h4>
+                <p className="text-sm text-gray-600">Chủ hộ: {selectedPhieu.tenChuHo}</p>
+                <p className="text-sm text-gray-600">Ngày: {selectedPhieu.ngayThu ? new Date(selectedPhieu.ngayThu).toLocaleDateString('vi-VN') : '—'}</p>
+              </div>
+              <button onClick={closePhieuDetails} className="text-gray-500 hover:text-gray-800 text-2xl">✕</button>
+            </div>
+
+            <div className="divide-y">
+              <div className="pb-4">
+                <h5 className="font-semibold mb-2">Các khoản đã nộp</h5>
+                {selectedPhieu.chiTietThu && selectedPhieu.chiTietThu.length > 0 ? (
+                  <ul className="space-y-2">
+                    {selectedPhieu.chiTietThu.map((ct: any, i: number) => (
+                      <li key={i} className="flex justify-between items-center">
+                        <div className="text-sm text-gray-700">{ct.tenKhoanThu}</div>
+                        <div className="text-sm font-semibold text-indigo-600">{formatVND(ct.soTien)} đ</div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-sm text-gray-500">Không có khoản thu chi tiết.</div>
+                )}
+              </div>
+
+              <div className="pt-4">
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-gray-600">Tổng</div>
+                  <div className="text-lg font-bold text-green-600">{formatVND(selectedPhieu.tongTien)} đ</div>
+                </div>
+                <div className="text-sm text-gray-500 mt-2">Trạng thái: {selectedPhieu.trangThai ?? '—'}</div>
+              </div>
+            </div>
           </div>
         </div>
       )}
