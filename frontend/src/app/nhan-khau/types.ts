@@ -14,7 +14,12 @@ export interface NhanKhau {
   gioiTinh: string;
 
   // QUAN TRỌNG: Đây phải là object
-  soDinhDanh: SoDinhDanh;
+  soDinhDanh: {
+    loai: string;
+    so: string;
+    ngayCap?: string;
+    noiCap?: string;
+  };
 
   // QUAN TRỌNG: Phải đúng chính tả Enum của backend
   trangThai: 'Thường trú' | 'Tạm trú' | 'Tạm vắng' | 'Đã chuyển đi' | 'Đã qua đời';

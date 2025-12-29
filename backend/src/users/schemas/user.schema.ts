@@ -35,7 +35,7 @@ export class User {
   soDienThoai: string;
 
   @Prop({ type: SoDinhDanh })
-  soDinhDanh?: SoDinhDanh;
+  soDinhDanh: SoDinhDanh;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

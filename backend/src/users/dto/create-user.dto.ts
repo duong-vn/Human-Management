@@ -38,8 +38,8 @@ export class CreateUserDto {
   @IsString()
   soDienThoai?: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @ValidateNested()
   @Type(() => SoDinhDanh)
-  soDinhDanh?: SoDinhDanh;
+  soDinhDanh: SoDinhDanh;
 }

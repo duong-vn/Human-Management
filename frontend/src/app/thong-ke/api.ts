@@ -50,7 +50,8 @@ export const getChiTietHoDaNop = async (kyThu: string, nam?: number) => {
 // Lấy lịch sử nộp tiền của một hộ khẩu (các phiếu thu, tổng đã nộp và còn nợ)
 export const getLichSuHo = async (hoKhauId: string, nam?: number) => {
   try {
-    const url = nam ? `/thu-phi/ke-toan/ho-khau/${hoKhauId}/lich-su?nam=${nam}` : `/thu-phi/ke-toan/ho-khau/${hoKhauId}/lich-su`;
+    const id = encodeURIComponent(String(hoKhauId));
+    const url = nam ? `/thu-phi/ke-toan/ho-khau/${id}/lich-su?nam=${nam}` : `/thu-phi/ke-toan/ho-khau/${id}/lich-su`;
     const res = await api.get(url);
     return res.data;
   } catch (error) {

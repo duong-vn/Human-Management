@@ -5,7 +5,7 @@ import { ROLES_KEY } from '../decorators/roles.decorator';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) { }
+  constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(
@@ -20,7 +20,7 @@ export class RolesGuard implements CanActivate {
     const { user } = context.switchToHttp().getRequest();
 
     // Tổ trưởng và tổ phó có quyền truy cập tất cả
-    if (user.role === UserRole.TO_TRUONG || user.role === UserRole.TO_PHO) {
+    if (user.role === UserRole.TO_TRUONG) {
       return true;
     }
 

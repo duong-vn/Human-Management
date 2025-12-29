@@ -30,7 +30,7 @@ import {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('thu-phi')
 export class ThuPhiController {
-  constructor(private readonly thuPhiService: ThuPhiService) { }
+  constructor(private readonly thuPhiService: ThuPhiService) {}
 
   @Post()
   @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO, UserRole.KE_TOAN)

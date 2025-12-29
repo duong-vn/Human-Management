@@ -77,10 +77,10 @@ export default function ThemThanhVienModal({
   // Tìm kiếm theo CCCD/CMND
   const handleSearchByCCCD = async () => {
     if (!cccdSearch.trim() || !onSearchByCCCD) return;
-    
+
     setIsSearchingCCCD(true);
     setCccdSearchError("");
-    
+
     try {
       const result = await onSearchByCCCD(cccdSearch.trim());
       if (result) {
@@ -137,7 +137,10 @@ export default function ThemThanhVienModal({
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-140px)]"
+        >
           {/* Tìm kiếm theo CCCD/CMND */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -154,7 +157,10 @@ export default function ThemThanhVienModal({
                   placeholder="Nhập số CMND hoặc CCCD..."
                   value={cccdSearch}
                   onChange={(e) => setCccdSearch(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleSearchByCCCD())}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" &&
+                    (e.preventDefault(), handleSearchByCCCD())
+                  }
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                 />
               </div>
@@ -182,7 +188,9 @@ export default function ThemThanhVienModal({
               <div className="w-full border-t border-gray-200"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-white text-gray-500">hoặc chọn từ danh sách</span>
+              <span className="px-3 bg-white text-gray-500">
+                hoặc chọn từ danh sách
+              </span>
             </div>
           </div>
 
@@ -221,10 +229,14 @@ export default function ThemThanhVienModal({
                     >
                       <div className="flex justify-between items-start">
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-gray-800 truncate">{nk.hoTen}</p>
+                          <p className="font-medium text-gray-800 truncate">
+                            {nk.hoTen}
+                          </p>
                           <p className="text-xs text-gray-500">
                             {nk.ngaySinh
-                              ? new Date(nk.ngaySinh).toLocaleDateString("vi-VN")
+                              ? new Date(nk.ngaySinh).toLocaleDateString(
+                                  "vi-VN"
+                                )
                               : "---"}{" "}
                             • {nk.gioiTinh || "---"}
                           </p>
