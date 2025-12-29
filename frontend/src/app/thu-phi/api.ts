@@ -1,54 +1,10 @@
 import { CreateThuPhiPayload } from "./types";
 import api from "@/lib/axios";
 
-export const getActiveKhoanThu = async () => {
-  const res = await api.get("/khoan-thu/active");
-  return res.data;
-};
-
-export const createThuPhi = async (data: CreateThuPhiPayload) => {
-  const res = await api.post("/thu-phi", data);
-  return res.data;
-};
-
-export const getAllHoKhau = async () => {
-  const res = await api.get("/ho-khau");
-  return res.data; // Backend trả về Array
-};
-
-export const createKhoanThu = async (data: any) => {
-  const res = await api.post("/khoan-thu", data);
-  return res.data;
-};
+// --- QUẢN LÝ KHOẢN THU (DANH MỤC) ---
 
 export const getAllKhoanThu = async () => {
   const res = await api.get("/khoan-thu");
-  return res.data;
-};
-
-export const getAllThuPhi = async () => {
-  const res = await api.get("/thu-phi");
-  return res.data;
-};
-
-export const createPhieuThu = async (data: any) => {
-  // LƯU Ý: Kiểm tra Backend của bạn:
-  // Nếu Controller là @Controller('phieu-thu') -> dùng "/phieu-thu"
-  // Nếu Controller là @Controller('thu-phi') -> dùng "/thu-phi"
-
-  // Tạm thời mình để /phieu-thu theo chuẩn RESTful mới
-  const res = await api.post("/thu-phi", data);
-  return res.data;
-};
-
-export const updatePhieuThu = async (id: string, payload: any) => {
-  // Sửa put -> patch
-  const res = await api.patch(`/thu-phi/${id}`, payload);
-  return res.data;
-};
-
-export const deleteKhoanThu = async (id: string) => {
-  const res = await api.delete(`/khoan-thu/${id}`);
   return res.data;
 };
 
@@ -62,7 +18,51 @@ export const getKhoanThuTuNguyen = async () => {
   return res.data;
 };
 
+export const createKhoanThu = async (data: any) => {
+  // Đảm bảo data truyền vào đã có ngayBatDau (ISO String) và loaiKhoanThu
+  const res = await api.post("/khoan-thu", data);
+  return res.data;
+};
+
+export const deleteKhoanThu = async (id: string) => {
+  const res = await api.delete(`/khoan-thu/${id}`);
+  return res.data;
+};
+
+export const getActiveKhoanThu = async () => {
+  const res = await api.get("/khoan-thu/active");
+  return res.data;
+};
+
+
+// --- QUẢN LÝ THU PHÍ (GIAO DỊCH) ---
+
+export const getAllThuPhi = async () => {
+  const res = await api.get("/thu-phi");
+  // Quan trọng: Giao diện sẽ dùng trường "trangThai" từ đây để check "Đã nộp"
+  return res.data;
+};
+
+// Thống nhất dùng createPhieuThu hoặc createThuPhi (nên dùng createPhieuThu cho đồng bộ giao diện)
+export const createPhieuThu = async (data: any) => {
+  const res = await api.post("/thu-phi", data);
+  return res.data;
+};
+
+export const updatePhieuThu = async (id: string, payload: any) => {
+  const res = await api.patch(`/thu-phi/${id}`, payload);
+  return res.data;
+};
+
 export const deletePhieuThu = async (id: string) => {
   const res = await api.delete(`/thu-phi/${id}`);
+  return res.data;
+};
+
+
+// --- QUẢN LÝ HỘ KHẨU ---
+
+export const getAllHoKhau = async () => {
+  const res = await api.get("/ho-khau");
   return res.data;
 };
