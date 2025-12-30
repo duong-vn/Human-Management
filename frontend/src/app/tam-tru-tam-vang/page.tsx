@@ -8,15 +8,18 @@ import { toast } from "sonner";
 
 // 1. IMPORT THÊM THƯ VIỆN UI
 import { motion, AnimatePresence } from "framer-motion";
-import { Edit, Trash2, Plus, User, Search, MapPin, Calendar } from "lucide-react";
+import { Edit, Trash2, Plus, User, Search, MapPin, Calendar, Eye } from "lucide-react";
 import TamTruTamVangModal from "./tamTruTamVangModal";
 import ConfirmModal from "./confirmModal";
+import ViewTamTruTamVangModal from "./viewTamTruTamVangModal";
 
 export default function TamTruTamVangPage() {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<TamTruTamVang | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [viewingItem, setViewingItem] = useState<TamTruTamVang | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLoai, setFilterLoai] = useState<string>("");
   const [filterTrangThai, setFilterTrangThai] = useState<string>("");
@@ -72,6 +75,7 @@ export default function TamTruTamVangPage() {
   // --- HANDLERS ---
   const handleOpenAdd = () => { setEditingItem(null); setIsModalOpen(true); };
   const handleOpenEdit = (item: TamTruTamVang) => { setEditingItem(item); setIsModalOpen(true); };
+  const handleOpenView = (item: TamTruTamVang) => { setViewingItem(item); setIsViewModalOpen(true); };
   const handleSubmitForm = (formData: any) => {
     if (editingItem) {
       const id = (editingItem as any)._id || editingItem.id;
@@ -264,6 +268,14 @@ export default function TamTruTamVangPage() {
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                           <button
+                            onClick={() => handleOpenView(item)}
+                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-all hover:scale-110 tooltip"
+                            title="Xem chi tiết"
+                          >
+                            <Eye size={16} />
+                          </button>
+
+                          <button
                             onClick={() => handleOpenEdit(item)}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all hover:scale-110 tooltip"
                             title="Sửa thông tin"
@@ -311,6 +323,12 @@ export default function TamTruTamVangPage() {
         onClose={() => setDeleteId(null)}
         onConfirm={handleConfirmDelete}
         isLoading={deleteMutation.isPending}
+      />
+
+      <ViewTamTruTamVangModal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        item={viewingItem}
       />
     </div>
   );
