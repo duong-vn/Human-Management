@@ -208,6 +208,12 @@ export class NhanKhauController {
     return this.nhanKhauService.thongKeTongQuan();
   }
 
+  @Get('thong-ke/tuoi-trung-binh')
+  @ApiOperation({ summary: 'Tính tuổi trung bình của nhân khẩu' })
+  tinhTuoiTrungBinh() {
+    return this.nhanKhauService.tinhTuoiTrungBinh();
+  }
+
   @Get('ho-khau/:hoKhauId')
   @ApiOperation({ summary: 'Lấy danh sách nhân khẩu theo hộ khẩu' })
   findByHoKhau(@Param('hoKhauId') hoKhauId: string) {

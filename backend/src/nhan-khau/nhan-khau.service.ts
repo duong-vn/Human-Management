@@ -295,6 +295,51 @@ export class NhanKhauService {
     };
   }
 
+  // Tính tuổi trung bình
+  async tinhTuoiTrungBinh(): Promise<any> {
+    const now = new Date();
+    const result = await this.nhanKhauModel.aggregate([
+      { $match: { trangThai: { $in: ['Thường trú', 'Tạm trú'] } } },
+      {
+        $addFields: {
+          tuoi: {
+            $floor: {
+              $divide: [
+                { $subtract: [now, '$ngaySinh'] },
+                365.25 * 24 * 60 * 60 * 1000,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          tuoiTrungBinh: { $avg: '$tuoi' },
+          soLuong: { $sum: 1 },
+          tuoiNhoNhat: { $min: '$tuoi' },
+          tuoiLonNhat: { $max: '$tuoi' },
+        },
+      },
+    ]);
+
+    if (result.length === 0) {
+      return {
+        tuoiTrungBinh: 0,
+        soLuong: 0,
+        tuoiNhoNhat: 0,
+        tuoiLonNhat: 0,
+      };
+    }
+
+    return {
+      tuoiTrungBinh: Math.round(result[0].tuoiTrungBinh * 10) / 10, // Làm tròn 1 chữ số thập phân
+      soLuong: result[0].soLuong,
+      tuoiNhoNhat: result[0].tuoiNhoNhat,
+      tuoiLonNhat: result[0].tuoiLonNhat,
+    };
+  }
+
   // Đếm nhân khẩu theo hộ khẩu (dùng cho thu phí)
   async demNhanKhauTheoHoKhau(hoKhauId: string): Promise<number> {
     return this.nhanKhauModel.countDocuments({
