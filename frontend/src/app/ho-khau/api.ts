@@ -118,13 +118,17 @@ export const getNhanKhauChuaCoHoKhau = async (): Promise<NhanKhauBasic[]> => {
 };
 
 // Tìm kiếm nhân khẩu theo từ khóa (tên, CCCD, CMND)
-export const searchNhanKhau = async (keyword: string): Promise<NhanKhauBasic[]> => {
+export const searchNhanKhau = async (
+  keyword: string
+): Promise<NhanKhauBasic[]> => {
   const res = await api.get("/nhan-khau/search", { params: { keyword } });
   return res.data;
 };
 
 // Tìm nhân khẩu theo CCCD/CMND
-export const findNhanKhauByCCCD = async (cccd: string): Promise<NhanKhauBasic | null> => {
+export const findNhanKhauByCCCD = async (
+  cccd: string
+): Promise<NhanKhauBasic | null> => {
   try {
     const res = await api.get(`/nhan-khau/cccd/${cccd}`);
     return res.data;
@@ -139,8 +143,11 @@ export const capNhatQuanHeThanhVien = async (
   nhanKhauId: string,
   quanHeVoiChuHo: string
 ): Promise<HoKhau> => {
-  const res = await api.patch(`/ho-khau/${hoKhauId}/cap-nhat-thanh-vien/${nhanKhauId}`, {
-    quanHeVoiChuHo,
-  });
+  const res = await api.patch(
+    `/ho-khau/${hoKhauId}/cap-nhat-thanh-vien/${nhanKhauId}`,
+    {
+      quanHeVoiChuHo,
+    }
+  );
   return res.data;
 };

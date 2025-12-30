@@ -254,7 +254,11 @@ export default function ThongKeHoKhauPage() {
                 Hộ có nhiều thành viên nhất
               </p>
               <p className="font-semibold text-gray-800">
-                {getChuHoName("chuHo" in stats.hoNhieuThanhVienNhat ? stats.hoNhieuThanhVienNhat.chuHo : undefined)}
+                {getChuHoName(
+                  "chuHo" in stats.hoNhieuThanhVienNhat
+                    ? stats.hoNhieuThanhVienNhat.chuHo
+                    : undefined
+                )}
               </p>
               <p className="text-sm text-green-600 mt-1">
                 {stats.hoNhieuThanhVienNhat?.thanhVien?.length || 0} thành viên
@@ -265,7 +269,11 @@ export default function ThongKeHoKhauPage() {
                 Hộ có ít thành viên nhất
               </p>
               <p className="font-semibold text-gray-800">
-                {getChuHoName("chuHo" in stats.hoItThanhVienNhat ? stats.hoItThanhVienNhat.chuHo : undefined)}
+                {getChuHoName(
+                  "chuHo" in stats.hoItThanhVienNhat
+                    ? stats.hoItThanhVienNhat.chuHo
+                    : undefined
+                )}
               </p>
               <p className="text-sm text-orange-600 mt-1">
                 {stats.hoItThanhVienNhat?.thanhVien?.length || 0} thành viên
