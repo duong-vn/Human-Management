@@ -14,6 +14,7 @@ interface Props {
 const defaultData = {
   nhanKhauId: undefined,
   hoTen: "",
+  soDinhDanh: "", // Căn cước công dân
   loai: "Tạm trú" as "Tạm trú" | "Tạm vắng",
   tuNgay: "",
   denNgay: "",
@@ -102,6 +103,7 @@ export default function TamTruTamVangModal({
           ...prev,
           nhanKhauId: selectedNhanKhau.id || selectedNhanKhau._id,
           hoTen: selectedNhanKhau.hoTen,
+          soDinhDanh: selectedNhanKhau.soDinhDanh?.so || "",
           diaChiThuongTru: selectedNhanKhau.diaChiThuongTru || defaultData.diaChiThuongTru,
           loai: loaiDangKy === 'tam-vang-tu-danh-sach' ? 'Tạm vắng' : 'Tạm trú',
         }));
@@ -144,16 +146,22 @@ export default function TamTruTamVangModal({
     if (!formData.denNgay) newErrors.denNgay = "Vui lòng chọn ngày kết thúc";
 
     // Validation theo loại đăng ký
-    if (loaiDangKy === 'tam-vang-tu-danh-sach' || loaiDangKy === 'tam-tru-tu-danh-sach') {
+    if (!initialData && (loaiDangKy === 'tam-vang-tu-danh-sach' || loaiDangKy === 'tam-tru-tu-danh-sach')) {
       if (!selectedNhanKhau) {
         newErrors.nhanKhau = "Vui lòng chọn nhân khẩu từ danh sách";
       }
-    } else {
-      // Người mới
+    } else if (!initialData && loaiDangKy === 'tam-tru-nguoi-moi') {
+      // Người mới - chỉ validate khi thêm mới
       if (!formData.hoTen.trim()) newErrors.hoTen = "Vui lòng nhập họ tên";
+      if (!formData.soDinhDanh.trim()) newErrors.soDinhDanh = "Vui lòng nhập căn cước công dân";
       if (!formData.diaChiThuongTru?.tinhThanh?.trim()) {
         newErrors.diaChiThuongTru = "Vui lòng nhập địa chỉ thường trú";
       }
+    }
+
+    // Luôn yêu cầu căn cước công dân khi edit
+    if (initialData && !formData.soDinhDanh.trim()) {
+      newErrors.soDinhDanh = "Vui lòng nhập căn cước công dân";
     }
 
     if (formData.loai === "Tạm trú" && !formData.diaChiTamTru.tinhThanh?.trim()) {
@@ -251,8 +259,8 @@ export default function TamTruTamVangModal({
             </div>
           )}
 
-          {/* Dropdown chọn nhân khẩu - chỉ hiển thị cho 2 loại đầu */}
-          {(loaiDangKy === 'tam-vang-tu-danh-sach' || loaiDangKy === 'tam-tru-tu-danh-sach') && (
+          {/* Dropdown chọn nhân khẩu - chỉ hiển thị khi thêm mới */}
+          {!initialData && (loaiDangKy === 'tam-vang-tu-danh-sach' || loaiDangKy === 'tam-tru-tu-danh-sach') && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Chọn nhân khẩu từ danh sách *
@@ -281,8 +289,8 @@ export default function TamTruTamVangModal({
             </div>
           )}
 
-          {/* Thông tin nhân khẩu được chọn */}
-          {(loaiDangKy === 'tam-vang-tu-danh-sach' || loaiDangKy === 'tam-tru-tu-danh-sach') && selectedNhanKhau && (
+          {/* Thông tin nhân khẩu được chọn - chỉ hiển thị khi thêm mới */}
+          {!initialData && (loaiDangKy === 'tam-vang-tu-danh-sach' || loaiDangKy === 'tam-tru-tu-danh-sach') && selectedNhanKhau && (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <h3 className="font-medium text-blue-800 mb-2">Thông tin nhân khẩu đã chọn:</h3>
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -338,26 +346,29 @@ export default function TamTruTamVangModal({
 
           {/* Nhân khẩu ID và Họ tên */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                ID Nhân khẩu (tùy chọn)
-              </label>
-              <input
-                type="text"
-                name="nhanKhauId"
-                value={formData.nhanKhauId}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Nhập ID nhân khẩu (nếu có)"
-              />
-              {errors.nhanKhauId && (
-                <p className="text-red-500 text-sm mt-1">{errors.nhanKhauId}</p>
-              )}
-            </div>
+            {/* Ẩn nhanKhauId khi là người mới hoặc khi cập nhật */}
+            {!(loaiDangKy === 'tam-tru-nguoi-moi' || initialData) && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ID Nhân khẩu (tùy chọn)
+                </label>
+                <input
+                  type="text"
+                  name="nhanKhauId"
+                  value={formData.nhanKhauId}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Nhập ID nhân khẩu (nếu có)"
+                />
+                {errors.nhanKhauId && (
+                  <p className="text-red-500 text-sm mt-1">{errors.nhanKhauId}</p>
+                )}
+              </div>
+            )}
 
-            <div>
+            <div className={loaiDangKy === 'tam-tru-nguoi-moi' || initialData ? "col-span-2" : ""}>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Họ và tên {loaiDangKy === 'tam-tru-nguoi-moi' ? '*' : ''}
+                Họ và tên {loaiDangKy === 'tam-tru-nguoi-moi' || initialData ? '*' : ''}
               </label>
               <input
                 type="text"
@@ -366,7 +377,7 @@ export default function TamTruTamVangModal({
                 onChange={handleChange}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Nhập họ và tên"
-                disabled={loaiDangKy === 'tam-vang-tu-danh-sach' || loaiDangKy === 'tam-tru-tu-danh-sach'}
+                disabled={!initialData && (loaiDangKy === 'tam-vang-tu-danh-sach' || loaiDangKy === 'tam-tru-tu-danh-sach')}
               />
               {errors.hoTen && (
                 <p className="text-red-500 text-sm mt-1">{errors.hoTen}</p>
@@ -374,11 +385,30 @@ export default function TamTruTamVangModal({
             </div>
           </div>
 
-          {/* Địa chỉ thường trú - chỉ hiển thị cho người mới */}
-          {loaiDangKy === 'tam-tru-nguoi-moi' && (
+          {/* Căn cước công dân */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Căn cước công dân {loaiDangKy === 'tam-tru-nguoi-moi' || initialData ? '*' : ''}
+            </label>
+            <input
+              type="text"
+              name="soDinhDanh"
+              value={formData.soDinhDanh}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Nhập số căn cước công dân"
+              disabled={!initialData && (loaiDangKy === 'tam-vang-tu-danh-sach' || loaiDangKy === 'tam-tru-tu-danh-sach')}
+            />
+            {errors.soDinhDanh && (
+              <p className="text-red-500 text-sm mt-1">{errors.soDinhDanh}</p>
+            )}
+          </div>
+
+          {/* Địa chỉ thường trú - hiển thị cho người mới hoặc khi edit */}
+          {(loaiDangKy === 'tam-tru-nguoi-moi' || initialData) && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Địa chỉ thường trú *
+                Địa chỉ thường trú {loaiDangKy === 'tam-tru-nguoi-moi' ? '*' : ''}
               </label>
               <div className="grid grid-cols-3 gap-4">
                 <input
