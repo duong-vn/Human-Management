@@ -1,7 +1,5 @@
 import { SoDinhDanh } from "../nhan-khau/types";
 
-import { SoDinhDanh } from "../nhan-khau/types";
-
 export enum UserRole {
   TO_TRUONG = 'to_truong',
   TO_PHO = 'to_pho',
