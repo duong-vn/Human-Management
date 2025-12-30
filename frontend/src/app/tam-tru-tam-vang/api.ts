@@ -42,3 +42,9 @@ export const getThongKeTamTruTamVang = async (params?: {
   const res = await api.get("/tam-tru-tam-vang/thong-ke", { params });
   return res.data;
 };
+
+// API để lấy danh sách nhân khẩu cho dropdown
+export const getAllNhanKhau = async (): Promise<any[]> => {
+  const res = await api.get("/nhan-khau");
+  return res.data;
+};
