@@ -58,16 +58,18 @@ export default function QuanLyCacKhoanThu() {
     return typeof obj === "string" ? obj : (obj._id || obj.id || String(obj));
   };
 
+  // 🟢 ĐÃ SỬA: Cập nhật logic tính phí vệ sinh theo nhân khẩu
   const calculateFee = useCallback((hoKhau: any) => {
     if (!activeKhoanThu) return { tongTien: 0, kyThuLabel: "" };
 
-    const donGia = Number(activeKhoanThu.soTien || 0);
+    const donGia = Number(activeKhoanThu.soTien || 0); // Giả sử đơn giá DB là 6000
     const tenKhoan = activeKhoanThu.tenKhoanThu?.toLowerCase() || "";
     const soNK = (hoKhau.thanhVien?.length || 0);
 
     if (tenKhoan.includes("vệ sinh")) {
       return {
-        tongTien: donGia * 12,
+        // Công thức: 6000đ * Số người * 12 tháng
+        tongTien: donGia * soNK * 12,
         kyThuLabel: `Năm ${selectedYear}`,
       };
     }
@@ -77,7 +79,7 @@ export default function QuanLyCacKhoanThu() {
     };
   }, [activeKhoanThu, selectedMonth, selectedYear]);
 
-  // 🟢 FIX LỖI: Ưu tiên trạng thái "Đã thu" để ghi đè trạng thái "Chưa thu" (Nợ) trên UI
+  // --- LOGIC XỬ LÝ TRẠNG THÁI ---
   const getSinglePaymentStatus = (hoKhau: any) => {
     if (!activeKhoanThu) return "none";
 
@@ -85,7 +87,6 @@ export default function QuanLyCacKhoanThu() {
     const ktId = getCleanId(activeKhoanThu._id || activeKhoanThu.id);
     const { kyThuLabel } = calculateFee(hoKhau);
 
-    // Lấy tất cả các phiếu khớp ID hộ và kỳ thu
     const filterredPhieu = dsPhieuThu.filter((pt: any) => {
       const ptHoKhauId = getCleanId(pt.hoKhauId);
       return ptHoKhauId === hkId &&
@@ -95,11 +96,9 @@ export default function QuanLyCacKhoanThu() {
 
     if (filterredPhieu.length === 0) return "none";
 
-    // Nếu có bất kỳ phiếu nào là "Đã thu", UI phải hiện "Đã nộp"
     const hasPaid = filterredPhieu.some((p: any) => p.trangThai === "Đã thu");
     if (hasPaid) return "Đã thu";
 
-    // Nếu không có phiếu nào "Đã thu" mà có phiếu "Chưa thu", hiện "Chưa thu"
     const hasDebt = filterredPhieu.some((p: any) => p.trangThai === "Chưa thu");
     if (hasDebt) return "Chưa thu";
 
