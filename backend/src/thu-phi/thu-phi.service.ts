@@ -9,7 +9,7 @@ import { ThuPhi, ThuPhiDocument } from './schemas/thu-phi.schema';
 export class ThuPhiService {
   constructor(
     @InjectModel(ThuPhi.name) private thuPhiModel: Model<ThuPhiDocument>,
-  ) {}
+  ) { }
 
   async create(
     createThuPhiDto: CreateThuPhiDto,
@@ -415,7 +415,7 @@ export class ThuPhiService {
 
   // Lịch sử nộp tiền của một hộ khẩu
   async getLichSuNopTien(hoKhauId: string, nam?: number): Promise<any> {
-    const filter: any = { hoKhauId: new Types.ObjectId(hoKhauId)};
+    const filter: any = { hoKhauId: new Types.ObjectId(hoKhauId) };
     if (nam) filter.nam = nam;
 
     const phieuThu = await this.thuPhiModel
