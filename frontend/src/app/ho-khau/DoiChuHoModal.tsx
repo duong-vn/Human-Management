@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { X, Users } from "lucide-react";
-import { HoKhau, DoiChuHoParams, ThanhVien } from "./types";
+import { HoKhau, DoiChuHoParams, ThanhVien, getChuHoInfo } from "./types";
 
 interface Props {
   isOpen: boolean;
@@ -32,12 +32,10 @@ export default function DoiChuHoModal({
 
   if (!isOpen || !hoKhau) return null;
 
-  const currentChuHoId =
-    typeof hoKhau.chuHo.nhanKhauId === "object"
-      ? hoKhau.chuHo.nhanKhauId._id
-      : hoKhau.chuHo.nhanKhauId;
-
-  const currentChuHoTen = hoKhau.chuHo.hoTen;
+  // Sử dụng helper function để lấy thông tin chủ hộ
+  const chuHoInfo = getChuHoInfo(hoKhau.chuHo);
+  const currentChuHoId = chuHoInfo?.id || "";
+  const currentChuHoTen = chuHoInfo?.hoTen || "Chưa có chủ hộ";
 
   // Danh sách thành viên (không bao gồm chủ hộ hiện tại)
   const thanhVienList = (hoKhau.thanhVien || []).filter((tv) => {

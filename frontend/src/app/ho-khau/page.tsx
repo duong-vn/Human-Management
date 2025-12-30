@@ -41,6 +41,7 @@ import {
   ThemThanhVienParams,
   LichSuThayDoi,
   NhanKhauBasic,
+  getChuHoInfo,
 } from "./types";
 
 // Import các modal
@@ -464,10 +465,9 @@ export default function HoKhauPage() {
               <AnimatePresence>
                 {safeList.map((hoKhau, index) => {
                   const id = hoKhau._id || hoKhau.id || "";
-                  const chuHoTen =
-                    typeof hoKhau.chuHo === "object" && hoKhau.chuHo?.hoTen
-                      ? hoKhau.chuHo.hoTen
-                      : hoKhau.chuHo?.hoTen || "---";
+                  // Sử dụng helper function để lấy tên chủ hộ
+                  const chuHoInfo = getChuHoInfo(hoKhau.chuHo);
+                  const chuHoTen = chuHoInfo?.hoTen || "---";
 
                   return (
                     <motion.tr

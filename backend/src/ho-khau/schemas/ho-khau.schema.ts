@@ -21,9 +21,10 @@ class ThanhVien {
 @Schema({ timestamps: true })
 export class HoKhau {
   @Prop({
-    type: ChuHoDto,
+    type: Types.ObjectId,
+    ref: 'NhanKhau',
   })
-  chuHo: ChuHoDto;
+  chuHo: Types.ObjectId;
 
   @Prop({
     type: DiaChi,

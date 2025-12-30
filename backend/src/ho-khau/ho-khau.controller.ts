@@ -261,12 +261,30 @@ export class HoKhauController {
 
   @Patch(':id/xoa-thanh-vien/:nhanKhauId')
   @ApiOperation({ summary: 'Xóa thành viên khỏi hộ khẩu' })
+  @ApiBody({
+    schema: {
+      example: {
+        chuHoThayThe: {
+          nhanKhauId: '691d9631baac1efb7579cf13',
+          hoTen: 'Trần Minh Anh',
+        },
+      },
+      description:
+        'Nếu xóa chủ hộ và còn thành viên khác, cần truyền chuHoThayThe',
+    },
+  })
   xoaThanhVien(
     @Param('id') id: string,
     @Param('nhanKhauId') nhanKhauId: string,
+    @Body() body: { chuHoThayThe?: { nhanKhauId: string; hoTen: string } },
     @Request() req,
   ) {
-    return this.hoKhauService.xoaThanhVien(id, nhanKhauId, req.user.username);
+    return this.hoKhauService.xoaThanhVien(
+      id,
+      nhanKhauId,
+      req.user.username,
+      body?.chuHoThayThe,
+    );
   }
 
   @Delete(':id')

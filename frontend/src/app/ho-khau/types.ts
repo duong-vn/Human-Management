@@ -7,10 +7,16 @@ export interface DiaChi {
   tinhThanh?: string;
 }
 
-export interface ChuHo {
-  nhanKhauId?: string | { _id: string; hoTen?: string };
+// ChuHo giờ là NhanKhau được populate (hoặc ObjectId string nếu chưa populate)
+export interface ChuHoPopulated {
+  _id: string;
   hoTen: string;
+  ngaySinh?: string;
+  gioiTinh?: string;
+  trangThai?: string;
 }
+
+export type ChuHo = string | ChuHoPopulated;
 
 export interface ThanhVien {
   nhanKhauId: string | { _id: string; hoTen?: string; trangThai?: string };
@@ -37,6 +43,17 @@ export interface HoKhau {
   createdAt?: string;
   updatedAt?: string;
 }
+
+// Helper function để lấy thông tin chủ hộ
+export const getChuHoInfo = (
+  chuHo: ChuHo
+): { id: string; hoTen: string } | null => {
+  if (!chuHo) return null;
+  if (typeof chuHo === "string") {
+    return { id: chuHo, hoTen: "" };
+  }
+  return { id: chuHo._id, hoTen: chuHo.hoTen };
+};
 
 // Type cho Nhân khẩu (dùng khi chọn từ danh sách)
 export interface NhanKhauBasic {
