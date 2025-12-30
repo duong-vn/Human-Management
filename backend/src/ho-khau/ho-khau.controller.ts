@@ -140,6 +140,17 @@ export class HoKhauController {
     return this.hoKhauService.thongKe();
   }
 
+  @Post('sync-ho-khau-id')
+  @Roles(UserRole.TO_TRUONG)
+  @ApiOperation({
+    summary: 'Đồng bộ lại hoKhauId cho tất cả nhân khẩu',
+    description:
+      'Dùng để sửa dữ liệu cũ bị sai. Chỉ TO_TRUONG mới được thực hiện.',
+  })
+  syncHoKhauId() {
+    return this.hoKhauService.syncHoKhauIdChoNhanKhau();
+  }
+
   @Get('active')
   @ApiOperation({ summary: 'Lấy danh sách hộ khẩu đang hoạt động' })
   getActive() {

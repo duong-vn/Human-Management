@@ -39,7 +39,24 @@ export class HoKhauService {
       thanhVien: thanhVienWithObjectIds,
       ngayLap: new Date(),
     });
-    return createdHoKhau.save();
+    const savedHoKhau = await createdHoKhau.save();
+
+    // Cập nhật hoKhauId cho tất cả nhân khẩu trong thành viên
+    const allNhanKhauIds = [
+      chuHoObjectId,
+      ...(thanhVienWithObjectIds?.map((tv) => tv.nhanKhauId) || []),
+    ];
+    // Loại bỏ duplicate
+    const uniqueNhanKhauIds = [
+      ...new Set(allNhanKhauIds.map((id) => id.toString())),
+    ].map((id) => new Types.ObjectId(id));
+
+    await this.nhanKhauModel.updateMany(
+      { _id: { $in: uniqueNhanKhauIds } },
+      { $set: { hoKhauId: savedHoKhau._id } },
+    );
+
+    return savedHoKhau;
   }
 
   async findAll(query?: {
@@ -336,6 +353,17 @@ export class HoKhauService {
     thanhVien: { nhanKhauId: string; hoTen: string; quanHeVoiChuHo: string },
     nguoiThucHien: string,
   ): Promise<HoKhau | null> {
+    // Kiểm tra nhân khẩu đã có hộ khẩu chưa
+    const nhanKhau = await this.nhanKhauModel.findById(thanhVien.nhanKhauId);
+    if (!nhanKhau) {
+      throw new NotFoundException('Không tìm thấy nhân khẩu');
+    }
+    if (nhanKhau.hoKhauId) {
+      throw new BadRequestException(
+        `Nhân khẩu ${thanhVien.hoTen} đã có hộ khẩu. Vui lòng xóa khỏi hộ khẩu cũ trước khi thêm vào hộ khẩu mới.`,
+      );
+    }
+
     const lichSu: LichSuThayDoiHoKhau = {
       noiDung: `Thêm thành viên: ${thanhVien.hoTen}`,
       ngayThayDoi: new Date(),
@@ -509,7 +537,11 @@ export class HoKhauService {
     updateHoKhauDto: UpdateHoKhauDto,
     nguoiThucHien?: string,
   ): Promise<any> {
-    const updateData: any = { $set: { ...updateHoKhauDto } };
+    // Không cho phép cập nhật chuHo và thanhVien qua hàm này
+    // Dùng thayDoiChuHo, themThanhVien, xoaThanhVien để thay đổi
+    const { chuHo, thanhVien, ...safeUpdateData } = updateHoKhauDto as any;
+
+    const updateData: any = { $set: { ...safeUpdateData } };
 
     if (nguoiThucHien) {
       const lichSu: LichSuThayDoiHoKhau = {
@@ -522,6 +554,8 @@ export class HoKhauService {
 
     return this.hoKhauModel
       .findByIdAndUpdate(id, updateData, { new: true })
+      .populate('chuHo')
+      .populate('thanhVien.nhanKhauId')
       .exec();
   }
 
@@ -558,5 +592,67 @@ export class HoKhauService {
       .find({ trangThai: 'Đang hoạt động' })
       .populate('chuHo')
       .exec();
+  }
+
+  // Sync lại hoKhauId cho tất cả nhân khẩu dựa trên thành viên trong hộ khẩu
+  async syncHoKhauIdChoNhanKhau(): Promise<{
+    total: number;
+    updated: number;
+    cleared: number;
+  }> {
+    // Reset tất cả hoKhauId về null
+    await this.nhanKhauModel.updateMany({}, { $set: { hoKhauId: null } });
+
+    // Lấy tất cả hộ khẩu đang hoạt động
+    const hoKhauList = await this.hoKhauModel.find({
+      trangThai: { $in: ['Đang hoạt động', 'Đã tách hộ'] },
+    });
+
+    let updated = 0;
+    for (const hoKhau of hoKhauList) {
+      // Lấy tất cả nhân khẩu ID (chủ hộ + thành viên)
+      const nhanKhauIds: Types.ObjectId[] = [];
+
+      if (hoKhau.chuHo) {
+        nhanKhauIds.push(
+          hoKhau.chuHo instanceof Types.ObjectId
+            ? hoKhau.chuHo
+            : new Types.ObjectId(hoKhau.chuHo.toString()),
+        );
+      }
+
+      if (hoKhau.thanhVien && hoKhau.thanhVien.length > 0) {
+        for (const tv of hoKhau.thanhVien) {
+          if (tv.nhanKhauId) {
+            nhanKhauIds.push(
+              tv.nhanKhauId instanceof Types.ObjectId
+                ? tv.nhanKhauId
+                : new Types.ObjectId(tv.nhanKhauId.toString()),
+            );
+          }
+        }
+      }
+
+      // Loại bỏ duplicate
+      const uniqueIds = [
+        ...new Set(nhanKhauIds.map((id) => id.toString())),
+      ].map((id) => new Types.ObjectId(id));
+
+      // Update hoKhauId cho các nhân khẩu
+      if (uniqueIds.length > 0) {
+        const result = await this.nhanKhauModel.updateMany(
+          { _id: { $in: uniqueIds } },
+          { $set: { hoKhauId: hoKhau._id } },
+        );
+        updated += result.modifiedCount;
+      }
+    }
+
+    const total = await this.nhanKhauModel.countDocuments();
+    const cleared = await this.nhanKhauModel.countDocuments({
+      hoKhauId: null,
+    });
+
+    return { total, updated, cleared };
   }
 }
