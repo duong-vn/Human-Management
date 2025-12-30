@@ -35,7 +35,7 @@ export default function MainLayout({
     <div className="min-h-screen bg-stone-100">
       <Navbar />
       {showSidebar && <Sidebar />}
-      <main className={`pt-16 ${showSidebar ? "ml-64" : ""} min-h-screen`}>
+      <main className={`${showSidebar ? "ml-64 pt-16 " : ""} min-h-screen`}>
         <div className={showSidebar ? "p-8" : ""}>{children}</div>
       </main>
     </div>

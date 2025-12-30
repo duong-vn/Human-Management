@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   clearUser,
   getUser,
@@ -15,6 +15,7 @@ import { toast } from "sonner";
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const isAuthPage = pathname?.startsWith("/auth");
   const [user, setUser] = useState<User>(getUser());
   useEffect(() => {
@@ -44,6 +45,8 @@ export default function Navbar() {
     } catch {
       toast.error("Đăng xuất thất bại!");
     }
+    // Chuyển về trang chủ sau khi đăng xuất
+    router.push("/");
   };
 
   return (
@@ -51,13 +54,14 @@ export default function Navbar() {
       <div className="px-6 py-3 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-9 h-9 bg-linear-to-br from-stone-600 to-stone-700 rounded-lg flex items-center justify-center text-white font-bold shadow-sm group-hover:from-stone-500 group-hover:to-stone-600 transition-all">
-            B
+          <div className="w-9 h-9 bg-linear-to-br from-blue-500 to-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm group-hover:from-blue-400 group-hover:to-emerald-400 transition-all">
+            T7
           </div>
           <span className="text-lg font-bold text-stone-100 group-hover:text-white transition">
-            Blue
+            KHÊ
             <span className="text-stone-400 group-hover:text-stone-300">
-              Moon
+              {" "}
+              La Khê
             </span>
           </span>
         </Link>
@@ -87,12 +91,9 @@ export default function Navbar() {
               >
                 Đăng nhập
               </Link>
-              <Link
-                href="/auth/register"
-                className="px-4 py-2 text-sm bg-stone-600 hover:bg-stone-500 text-white rounded-lg transition font-medium"
-              >
-                Đăng ký
-              </Link>
+              <span className="text-sm text-stone-400">
+                LH: <span className="text-stone-300">0123 456 789</span>
+              </span>
             </div>
           )}
         </div>

@@ -7,19 +7,46 @@ export interface DiaChi {
   tinhThanh?: string;
 }
 
-// ChuHo giờ là NhanKhau được populate (hoặc ObjectId string nếu chưa populate)
-export interface ChuHoPopulated {
+// Interface đầy đủ cho nhân khẩu populated
+export interface NhanKhauPopulated {
   _id: string;
   hoTen: string;
+  biDanh?: string;
   ngaySinh?: string;
+  noiSinh?: string;
+  queQuan?: string;
+  danToc?: string;
+  ngheNghiep?: string;
+  noiLamViec?: string;
+  soDinhDanh?: {
+    loai: string;
+    so: string;
+    ngayCap: string;
+    noiCap: string;
+  };
   gioiTinh?: string;
+  tonGiao?: string;
+  quocTich?: string;
+  diaChiHienTai?: DiaChi;
+  diaChiThuongTru?: DiaChi;
+  diaChiCu?: DiaChi;
   trangThai?: string;
+  hoKhauId?: string;
+  ngayDangKyThuongTru?: string;
+  ngayChuyenDi?: string;
+  noiChuyenDen?: string;
+  lyDoChuyenDi?: string;
+  moiSinh?: boolean;
+  ghiChu?: string;
 }
+
+// ChuHo giờ là NhanKhau được populate (hoặc ObjectId string nếu chưa populate)
+export type ChuHoPopulated = NhanKhauPopulated;
 
 export type ChuHo = string | ChuHoPopulated;
 
 export interface ThanhVien {
-  nhanKhauId: string | { _id: string; hoTen?: string; trangThai?: string };
+  nhanKhauId: string | NhanKhauPopulated;
   hoTen: string;
   quanHeVoiChuHo: string;
 }

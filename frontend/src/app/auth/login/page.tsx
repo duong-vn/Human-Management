@@ -71,7 +71,7 @@ export default function LoginPage() {
                 htmlFor="email"
                 className="block text-sm font-medium text-stone-700 mb-2"
               >
-                Email
+                Email hoặc tên đăng nhập
               </label>
               <input
                 type="text"
@@ -149,15 +149,10 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Register Link */}
-          <p className="mt-8 text-center text-stone-600">
-            Chưa có tài khoản?{" "}
-            <Link
-              href="/auth/register"
-              className="text-stone-800 hover:text-stone-600 font-semibold"
-            >
-              Đăng ký ngay
-            </Link>
+          {/* Contact Info */}
+          <p className="mt-8 text-center text-stone-500 text-sm">
+            Liên hệ Tổ trưởng:{" "}
+            <span className="font-semibold text-stone-700">0123 456 789</span>
           </p>
         </div>
       </div>
