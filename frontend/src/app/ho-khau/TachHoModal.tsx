@@ -7,6 +7,7 @@ import {
   DiaChi,
   ThanhVien,
   NhanKhauBasic,
+  getChuHoInfo,
 } from "./types";
 
 interface Props {
@@ -152,11 +153,10 @@ export default function TachHoModal({
   // Lấy danh sách thành viên có thể tách
   const thanhVienList = hoKhau.thanhVien || [];
 
-  // Lấy ID chủ hộ hiện tại
+  // Lấy ID chủ hộ hiện tại - sử dụng helper function
   const getChuHoHienTaiId = () => {
-    return typeof hoKhau.chuHo.nhanKhauId === "object"
-      ? hoKhau.chuHo.nhanKhauId._id
-      : hoKhau.chuHo.nhanKhauId || "";
+    const chuHoInfo = getChuHoInfo(hoKhau.chuHo);
+    return chuHoInfo?.id || "";
   };
 
   // Kiểm tra xem chủ hộ có bị tách không

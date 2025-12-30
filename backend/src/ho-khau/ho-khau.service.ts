@@ -31,14 +31,11 @@ export class HoKhauService {
       ...tv,
       nhanKhauId: new Types.ObjectId(tv.nhanKhauId),
     }));
-    const chuHoObjectId = new Types.ObjectId(chuHo.nhanKhauId);
+    const chuHoObjectId = new Types.ObjectId(chuHo);
 
     const createdHoKhau = new this.hoKhauModel({
       ...createHoKhauDto,
-      chuHo: {
-        nhanKhauId: chuHoObjectId,
-        hoTen: chuHo.hoTen,
-      },
+      chuHo: chuHoObjectId,
       thanhVien: thanhVienWithObjectIds,
       ngayLap: new Date(),
     });
@@ -56,17 +53,22 @@ export class HoKhauService {
     if (query?.search) {
       filter.$or = [{ 'chuHo.hoTen': { $regex: query.search, $options: 'i' } }];
     }
-    return this.hoKhauModel.find(filter).populate('chuHo.nhanKhauId').exec();
+    return this.hoKhauModel.find(filter).populate('chuHo').exec();
   }
 
   async findOne(id: string): Promise<HoKhau | null> {
-    return this.hoKhauModel.findById(id).populate('chuHo.nhanKhauId').exec();
+    return this.hoKhauModel
+      .findById(id)
+      .populate('chuHo')
+      .populate('thanhVien.nhanKhauId')
+      .exec();
   }
 
   async findByMaHoKhau(maHoKhau: string): Promise<HoKhau | null> {
     return this.hoKhauModel
       .findOne({ _id: maHoKhau })
-      .populate('chuHo.nhanKhauId')
+      .populate('chuHo')
+      .populate('thanhVien.nhanKhauId')
       .exec();
   }
 
@@ -80,13 +82,17 @@ export class HoKhauService {
       lyDo?: string;
     },
   ): Promise<HoKhau | null> {
-    const hoKhau = await this.hoKhauModel.findById(hoKhauId);
+    const hoKhau = await this.hoKhauModel
+      .findById(hoKhauId)
+      .populate('chuHo')
+      .exec();
     if (!hoKhau) {
       throw new NotFoundException('Không tìm thấy hộ khẩu');
     }
+    console.log(hoKhau);
 
     const lichSu: LichSuThayDoiHoKhau = {
-      noiDung: `Thay đổi chủ hộ từ "${hoKhau.chuHo.hoTen}" sang "${data.hoTenChuHoMoi}". ${data.lyDo || ''}`,
+      noiDung: `Thay đổi chủ hộ sang "${data.hoTenChuHoMoi}". ${data.lyDo || ''}`,
       ngayThayDoi: new Date(),
       nguoiThucHien: data.nguoiThucHien,
     };
@@ -96,15 +102,13 @@ export class HoKhauService {
         hoKhauId,
         {
           $set: {
-            chuHo: {
-              nhanKhauId: new Types.ObjectId(data.chuHoMoiId),
-              hoTen: data.hoTenChuHoMoi,
-            },
+            chuHo: new Types.ObjectId(data.chuHoMoiId),
           },
           $push: { lichSuThayDoi: lichSu },
         },
         { new: true },
       )
+      .populate('chuHo')
       .exec();
   }
 
@@ -137,7 +141,7 @@ export class HoKhauService {
     }
 
     // Kiểm tra xem chủ hộ có nằm trong danh sách tách không
-    const chuHoGocId = hoKhauGoc?.chuHo?.nhanKhauId?.toString();
+    const chuHoGocId = hoKhauGoc?.chuHo?.toString();
     const chuHoBiTach = data.danhSachNhanKhauMoi.some(
       (tv) => tv.nhanKhauId === chuHoGocId,
     );
@@ -171,10 +175,7 @@ export class HoKhauService {
 
     // Tạo hộ khẩu mới
     const hoKhauMoi = new this.hoKhauModel({
-      chuHo: {
-        nhanKhauId: new Types.ObjectId(data.chuHoMoi.nhanKhauId),
-        hoTen: data.chuHoMoi.hoTen,
-      },
+      chuHo: new Types.ObjectId(data.chuHoMoi.nhanKhauId),
       diaChi: data.diaChi,
       thanhVien: data.danhSachNhanKhauMoi.map((tv) => ({
         nhanKhauId: new Types.ObjectId(tv.nhanKhauId),
@@ -233,7 +234,7 @@ export class HoKhauService {
     // Nếu chủ hộ bị tách và còn thành viên ở lại, cập nhật chủ hộ mới cho hộ gốc
     if (chuHoBiTach && thanhVienConLai.length > 0 && data.chuHoMoiChoHoGoc) {
       const lichSuDoiChuHo: LichSuThayDoiHoKhau = {
-        noiDung: `Đổi chủ hộ từ "${hoKhauGoc.chuHo.hoTen}" sang "${data.chuHoMoiChoHoGoc.hoTen}" do tách hộ`,
+        noiDung: `Đổi chủ hộ sang "${data.chuHoMoiChoHoGoc.hoTen}" do tách hộ`,
         ngayThayDoi: new Date(),
         nguoiThucHien: data.nguoiThucHien,
       };
@@ -241,10 +242,7 @@ export class HoKhauService {
       // Cập nhật chủ hộ mới
       await this.hoKhauModel.findByIdAndUpdate(data.hoKhauGocId, {
         $set: {
-          chuHo: {
-            nhanKhauId: new Types.ObjectId(data.chuHoMoiChoHoGoc.nhanKhauId),
-            hoTen: data.chuHoMoiChoHoGoc.hoTen,
-          },
+          chuHo: new Types.ObjectId(data.chuHoMoiChoHoGoc.nhanKhauId),
         },
         $push: { lichSuThayDoi: lichSuDoiChuHo },
       });
@@ -327,6 +325,9 @@ export class HoKhauService {
       ngayThayDoi: new Date(),
       nguoiThucHien,
     };
+    await this.nhanKhauModel.findByIdAndUpdate(thanhVien.nhanKhauId, {
+      hoKhauId: new Types.ObjectId(hoKhauId),
+    });
 
     return this.hoKhauModel
       .findByIdAndUpdate(
@@ -351,12 +352,119 @@ export class HoKhauService {
     hoKhauId: string,
     nhanKhauId: string,
     nguoiThucHien: string,
+    chuHoThayThe?: { nhanKhauId: string; hoTen: string },
   ): Promise<HoKhau | null> {
+    const nhanKhau = await this.nhanKhauModel.findById(nhanKhauId);
+    if (!nhanKhau) {
+      throw new NotFoundException('Không tìm thấy nhân khẩu');
+    }
+    const hoKhau = await this.hoKhauModel.findById(hoKhauId);
+    if (!hoKhau) {
+      throw new NotFoundException('Không tìm thấy hộ khẩu');
+    }
+
+    const isChuHo = hoKhau.chuHo?.toString() === nhanKhauId;
+    const soThanhVien = hoKhau.thanhVien?.length || 0;
+
+    // Trường hợp xóa chủ hộ
+    if (isChuHo) {
+      // Nếu chỉ còn 1 thành viên (chủ hộ), xóa hết và chuyển trạng thái sang "Đã xóa"
+      if (soThanhVien <= 1) {
+        const lichSu: LichSuThayDoiHoKhau = {
+          noiDung: `Xóa chủ hộ - Hộ khẩu không còn thành viên, chuyển trạng thái sang Đã xóa`,
+          ngayThayDoi: new Date(),
+          nguoiThucHien,
+        };
+
+        // Xóa hoKhauId của nhân khẩu
+        await this.nhanKhauModel.findByIdAndUpdate(nhanKhauId, {
+          hoKhauId: null,
+        });
+
+        return this.hoKhauModel
+          .findByIdAndUpdate(
+            hoKhauId,
+            {
+              $set: {
+                chuHo: null,
+                thanhVien: [],
+                trangThai: 'Đã xóa',
+              },
+              $push: { lichSuThayDoi: lichSu },
+            },
+            { new: true },
+          )
+          .exec();
+      }
+
+      // Nếu còn nhiều hơn 1 thành viên, yêu cầu chủ hộ thay thế
+      if (!chuHoThayThe || !chuHoThayThe.nhanKhauId) {
+        throw new BadRequestException(
+          'Không thể xóa chủ hộ khi còn thành viên khác trong hộ. Vui lòng chỉ định chủ hộ thay thế.',
+        );
+      }
+
+      // Kiểm tra chủ hộ thay thế phải là thành viên còn lại trong hộ (không phải người đang bị xóa)
+      const chuHoThayTheHopLe = hoKhau.thanhVien.some(
+        (tv) =>
+          tv.nhanKhauId.toString() === chuHoThayThe.nhanKhauId &&
+          tv.nhanKhauId.toString() !== nhanKhauId,
+      );
+      if (!chuHoThayTheHopLe) {
+        throw new BadRequestException(
+          'Chủ hộ thay thế phải là thành viên còn lại trong hộ khẩu.',
+        );
+      }
+
+      const lichSu: LichSuThayDoiHoKhau = {
+        noiDung: `Xóa chủ hộ và thay thế bằng "${chuHoThayThe.hoTen}"`,
+        ngayThayDoi: new Date(),
+        nguoiThucHien,
+      };
+
+      // Xóa hoKhauId của nhân khẩu bị xóa
+      await this.nhanKhauModel.findByIdAndUpdate(nhanKhauId, {
+        hoKhauId: null,
+      });
+
+      // Cập nhật chủ hộ mới và xóa thành viên
+      await this.hoKhauModel.findByIdAndUpdate(hoKhauId, {
+        $set: {
+          chuHo: new Types.ObjectId(chuHoThayThe.nhanKhauId),
+        },
+        $pull: { thanhVien: { nhanKhauId: new Types.ObjectId(nhanKhauId) } },
+        $push: { lichSuThayDoi: lichSu },
+      });
+
+      // Cập nhật quan hệ của chủ hộ mới thành "Chủ hộ"
+      return this.hoKhauModel
+        .findByIdAndUpdate(
+          hoKhauId,
+          {
+            $set: {
+              'thanhVien.$[elem].quanHeVoiChuHo': 'Chủ hộ',
+            },
+          },
+          {
+            new: true,
+            arrayFilters: [
+              {
+                'elem.nhanKhauId': new Types.ObjectId(chuHoThayThe.nhanKhauId),
+              },
+            ],
+          },
+        )
+        .exec();
+    }
+
+    // Trường hợp xóa thành viên thường (không phải chủ hộ)
     const lichSu: LichSuThayDoiHoKhau = {
       noiDung: `Xóa thành viên khỏi hộ khẩu`,
       ngayThayDoi: new Date(),
       nguoiThucHien,
     };
+
+    await this.nhanKhauModel.findByIdAndUpdate(nhanKhauId, { hoKhauId: null });
 
     return this.hoKhauModel
       .findByIdAndUpdate(
@@ -429,6 +537,9 @@ export class HoKhauService {
 
   // Lấy danh sách hộ khẩu đang hoạt động (dùng cho thu phí)
   async getDanhSachHoKhauActive(): Promise<HoKhau[]> {
-    return this.hoKhauModel.find({ trangThai: 'Đang hoạt động' }).exec();
+    return this.hoKhauModel
+      .find({ trangThai: 'Đang hoạt động' })
+      .populate('chuHo')
+      .exec();
   }
 }

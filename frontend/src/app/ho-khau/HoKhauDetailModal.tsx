@@ -10,7 +10,7 @@ import {
   Calendar,
   MapPin,
 } from "lucide-react";
-import { HoKhau } from "./types";
+import { HoKhau, getChuHoInfo } from "./types";
 
 interface Props {
   isOpen: boolean;
@@ -49,15 +49,10 @@ export default function HoKhauDetailModal({
     return parts.join(", ") || "Chưa có địa chỉ";
   };
 
-  // Lấy tên chủ hộ
+  // Lấy tên chủ hộ - sử dụng helper function
   const getChuHoName = () => {
-    if (
-      typeof hoKhau.chuHo.nhanKhauId === "object" &&
-      hoKhau.chuHo.nhanKhauId?.hoTen
-    ) {
-      return hoKhau.chuHo.nhanKhauId.hoTen;
-    }
-    return hoKhau.chuHo.hoTen;
+    const chuHoInfo = getChuHoInfo(hoKhau.chuHo);
+    return chuHoInfo?.hoTen || "Chưa có chủ hộ";
   };
 
   // Get trạng thái badge color
@@ -212,15 +207,16 @@ export default function HoKhauDetailModal({
                     {hoKhau.thanhVien.map((tv, index) => {
                       const nkId =
                         typeof tv.nhanKhauId === "object"
-                          ? tv.nhanKhauId._id
+                          ? tv.nhanKhauId?._id
                           : tv.nhanKhauId;
                       const nkTrangThai =
                         typeof tv.nhanKhauId === "object"
-                          ? tv.nhanKhauId.trangThai
+                          ? tv.nhanKhauId?.trangThai
                           : undefined;
                       const nkHoTen =
-                        typeof tv.nhanKhauId === "object" && tv.nhanKhauId.hoTen
-                          ? tv.nhanKhauId.hoTen
+                        typeof tv.nhanKhauId === "object" &&
+                        tv.nhanKhauId?.hoTen
+                          ? tv.nhanKhauId?.hoTen
                           : tv.hoTen;
 
                       return (
