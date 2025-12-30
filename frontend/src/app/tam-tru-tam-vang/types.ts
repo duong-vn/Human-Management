@@ -11,6 +11,7 @@ export interface TamTruTamVang {
   id?: string;
   nhanKhauId?: string;
   hoTen: string;
+  soDinhDanh?: string; // Căn cước công dân
   loai: 'Tạm trú' | 'Tạm vắng';
   tuNgay: string;
   denNgay: string;
@@ -29,6 +30,7 @@ export interface TamTruTamVang {
 export interface CreateTamTruTamVangDto {
   nhanKhauId?: string;
   hoTen: string;
+  soDinhDanh?: string; // Căn cước công dân
   loai: 'Tạm trú' | 'Tạm vắng';
   tuNgay: string;
   denNgay: string;
