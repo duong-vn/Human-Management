@@ -60,13 +60,18 @@ export class HoKhauService {
   }
 
   async findOne(id: string): Promise<HoKhau | null> {
-    return this.hoKhauModel.findById(id).populate('chuHo.nhanKhauId').exec();
+    return this.hoKhauModel
+      .findById(id)
+      .populate('chuHo.nhanKhauId')
+      .populate('thanhVien.nhanKhauId')
+      .exec();
   }
 
   async findByMaHoKhau(maHoKhau: string): Promise<HoKhau | null> {
     return this.hoKhauModel
       .findOne({ _id: maHoKhau })
       .populate('chuHo.nhanKhauId')
+      .populate('thanhVien.nhanKhauId')
       .exec();
   }
 
@@ -327,6 +332,9 @@ export class HoKhauService {
       ngayThayDoi: new Date(),
       nguoiThucHien,
     };
+    await this.nhanKhauModel.findByIdAndUpdate(thanhVien.nhanKhauId, {
+      hoKhauId: new Types.ObjectId(hoKhauId),
+    });
 
     return this.hoKhauModel
       .findByIdAndUpdate(
@@ -357,6 +365,7 @@ export class HoKhauService {
       ngayThayDoi: new Date(),
       nguoiThucHien,
     };
+    await this.nhanKhauModel.findByIdAndUpdate(nhanKhauId, { hoKhauId: null });
 
     return this.hoKhauModel
       .findByIdAndUpdate(
