@@ -10,7 +10,6 @@ interface Props {
   isLoading: boolean;
 }
 
-// 1. Dữ liệu mặc định (hoKhauId để rỗng ban đầu)
 const defaultData = {
   hoTen: "",
   biDanh: "",
@@ -18,13 +17,13 @@ const defaultData = {
   ngaySinh: "",
   gioiTinh: "Nam",
   soDinhDanh: { loai: "CCCD", so: "", ngayCap: "", noiCap: "" },
-  hoKhauId: "", // 👈 Trường này sẽ là optional
+  hoKhauId: "",
   trangThai: "Thường trú",
   quocTich: "Việt Nam",
   tonGiao: "Không",
   quanHeVoiChuHo: "",
-  queQuan: "",
-  noiSinh: "",
+  queQuan: "", // 👈
+  noiSinh: "", // 👈
   ngheNghiep: "",
   noiLamViec: "",
   ghiChu: "",
@@ -44,9 +43,6 @@ export default function NhanKhauModal({
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
-        // --- CHẾ ĐỘ SỬA ---
-
-        // Xử lý hoKhauId: Nếu backend trả về object (do populate) thì lấy _id, nếu không thì lấy chính nó
         let currentHoKhauId = "";
         if (initialData.hoKhauId) {
             currentHoKhauId = typeof initialData.hoKhauId === 'object'
@@ -57,10 +53,8 @@ export default function NhanKhauModal({
         setFormData({
           ...defaultData,
           ...initialData,
-          hoKhauId: currentHoKhauId, // Gán ID đã xử lý vào
-
+          hoKhauId: currentHoKhauId,
           ngaySinh: initialData.ngaySinh ? initialData.ngaySinh.split("T")[0] : "",
-
           soDinhDanh: {
             ...defaultData.soDinhDanh,
             ...(initialData.soDinhDanh || {}),
@@ -68,12 +62,10 @@ export default function NhanKhauModal({
               ? initialData.soDinhDanh.ngayCap.split("T")[0]
               : "",
           },
-
           diaChiThuongTru: initialData.diaChiThuongTru || defaultData.diaChiThuongTru,
           diaChiHienTai: initialData.diaChiHienTai || defaultData.diaChiHienTai,
         });
       } else {
-        // --- CHẾ ĐỘ THÊM MỚI ---
         setFormData(defaultData);
       }
     }
@@ -95,19 +87,14 @@ export default function NhanKhauModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // 👇 LOGIC XỬ LÝ OPTIONAL hoKhauId
     let finalHoKhauId = formData.hoKhauId;
-
-    // Nếu rỗng hoặc chỉ có khoảng trắng -> Gán null (Backend sẽ hiểu là không gắn hộ khẩu)
     if (!finalHoKhauId || finalHoKhauId.trim() === "") {
         finalHoKhauId = null;
     }
 
     const submitData = {
       ...formData,
-      hoKhauId: finalHoKhauId, // Gửi null hoặc ID thực
-
+      hoKhauId: finalHoKhauId,
       ngaySinh: formData.ngaySinh ? new Date(formData.ngaySinh).toISOString() : null,
       soDinhDanh: {
         ...formData.soDinhDanh,
@@ -116,12 +103,6 @@ export default function NhanKhauModal({
           : null,
       },
     };
-
-    // Nếu bạn muốn "Không có thì KHÔNG GỬI luôn key đó" (delete key), dùng đoạn dưới:
-    // if (!finalHoKhauId) {
-    //    delete submitData.hoKhauId;
-    // }
-
     onSubmit(submitData);
   };
 
@@ -133,75 +114,43 @@ export default function NhanKhauModal({
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-
-          {/* Hàng 0: ID Hộ Khẩu (Optional) */}
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Mã Hộ Khẩu (ID) <span className="font-sans text-gray-700 mb-1">- (Không bắt buộc)</span>
+               Mã Hộ Khẩu (ID) <span className="font-sans text-gray-700 mb-1">- (Không bắt buộc)</span>
              </label>
              <input
-                name="hoKhauId"
-                value={formData.hoKhauId || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-black outline-none"
-                placeholder="Nhập ID hộ khẩu"
+               name="hoKhauId"
+               value={formData.hoKhauId || ""}
+               onChange={handleChange}
+               className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-black outline-none"
+               placeholder="Nhập ID hộ khẩu"
              />
              <p className="text-xs font-semibold text-gray-700 mt-1">Để trống nếu nhân khẩu này chưa nhập vào hộ nào.</p>
           </div>
 
-          {/* Hàng 1 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Họ Tên <span className="text-red-500">*</span></label>
-              <input
-                required
-                name="hoTen"
-                value={formData.hoTen || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="Nguyễn Văn A"
-              />
+              <input required name="hoTen" value={formData.hoTen || ""} onChange={handleChange} className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Nguyễn Văn A" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Ngày Sinh</label>
-              <input
-                type="date"
-                name="ngaySinh"
-                value={formData.ngaySinh || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              />
+              <input type="date" name="ngaySinh" value={formData.ngaySinh || ""} onChange={handleChange} className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Số Định Danh</label>
-              <input
-                value={formData.soDinhDanh?.so || ""}
-                onChange={(e) => handleNestedChange("soDinhDanh", "so", e.target.value)}
-                className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono"
-                placeholder="00109xxxxxxx"
-              />
+              <input value={formData.soDinhDanh?.so || ""} onChange={(e) => handleNestedChange("soDinhDanh", "so", e.target.value)} className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-mono" placeholder="00109xxxxxxx" />
             </div>
           </div>
 
-          {/* Hàng 2 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Bí Danh</label>
-              <input
-                name="biDanh"
-                value={formData.biDanh || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              />
+              <input name="biDanh" value={formData.biDanh || ""} onChange={handleChange} className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Giới Tính</label>
-              <select
-                name="gioiTinh"
-                value={formData.gioiTinh || "Nam"}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-              >
+              <select name="gioiTinh" value={formData.gioiTinh || "Nam"} onChange={handleChange} className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
                 <option value="Nam">Nam</option>
                 <option value="Nữ">Nữ</option>
                 <option value="Khác">Khác</option>
@@ -209,24 +158,26 @@ export default function NhanKhauModal({
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Dân Tộc</label>
-              <input
-                name="danToc"
-                value={formData.danToc || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              />
+              <input name="danToc" value={formData.danToc || ""} onChange={handleChange} className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
           </div>
 
-          {/* Hàng 3: Chi tiết Giấy tờ */}
+          {/* Hàng mới thêm: Quê quán và Nơi sinh 👈 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Quê quán</label>
+              <input name="queQuan" value={formData.queQuan || ""} onChange={handleChange} className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Xã, Huyện, Tỉnh" />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Nơi sinh</label>
+              <input name="noiSinh" value={formData.noiSinh || ""} onChange={handleChange} className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Thành phố, Tỉnh" />
+            </div>
+          </div>
+
           <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Loại giấy tờ</label>
-              <select
-                value={formData.soDinhDanh?.loai || "CCCD"}
-                onChange={(e) => handleNestedChange("soDinhDanh", "loai", e.target.value)}
-                className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none bg-white"
-              >
+              <select value={formData.soDinhDanh?.loai || "CCCD"} onChange={(e) => handleNestedChange("soDinhDanh", "loai", e.target.value)} className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none bg-white">
                 <option>CCCD</option>
                 <option>CMND</option>
                 <option>Hộ chiếu</option>
@@ -234,79 +185,40 @@ export default function NhanKhauModal({
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Ngày cấp</label>
-              <input
-                type="date"
-                value={formData.soDinhDanh?.ngayCap || ""}
-                onChange={(e) => handleNestedChange("soDinhDanh", "ngayCap", e.target.value)}
-                className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none bg-white"
-              />
+              <input type="date" value={formData.soDinhDanh?.ngayCap || ""} onChange={(e) => handleNestedChange("soDinhDanh", "ngayCap", e.target.value)} className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none bg-white" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Nơi cấp</label>
-              <input
-                value={formData.soDinhDanh?.noiCap || ""}
-                onChange={(e) => handleNestedChange("soDinhDanh", "noiCap", e.target.value)}
-                className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none bg-white"
-                placeholder="Cục CSQLHC về TTXH"
-              />
+              <input value={formData.soDinhDanh?.noiCap || ""} onChange={(e) => handleNestedChange("soDinhDanh", "noiCap", e.target.value)} className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none bg-white" placeholder="Cục CSQLHC về TTXH" />
             </div>
           </div>
 
-          {/* Hàng 4: Thông tin khác */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Quốc tịch</label>
-              <input
-                name="quocTich"
-                value={formData.quocTich || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none"
-              />
+              <input name="quocTich" value={formData.quocTich || ""} onChange={handleChange} className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Tôn Giáo</label>
-              <input
-                name="tonGiao"
-                value={formData.tonGiao || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none"
-              />
+              <input name="tonGiao" value={formData.tonGiao || ""} onChange={handleChange} className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none" />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Quan hệ với chủ hộ</label>
-              <input
-                name="quanHeVoiChuHo"
-                value={formData.quanHeVoiChuHo || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none"
-                placeholder="Ví dụ: Chủ hộ, Con, Vợ..."
-              />
+              <input name="quanHeVoiChuHo" value={formData.quanHeVoiChuHo || ""} onChange={handleChange} className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none" placeholder="Ví dụ: Chủ hộ, Con, Vợ..." />
             </div>
           </div>
 
-           {/* Hàng 5 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Nghề nghiệp</label>
-              <input
-                name="ngheNghiep"
-                value={formData.ngheNghiep || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none"
-              />
+              <input name="ngheNghiep" value={formData.ngheNghiep || ""} onChange={handleChange} className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none" />
             </div>
-             <div>
+              <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Ghi chú</label>
-              <input
-                name="ghiChu"
-                value={formData.ghiChu || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none"
-              />
+              <input name="ghiChu" value={formData.ghiChu || ""} onChange={handleChange} className="w-full border border-gray-300 px-3 py-2 rounded-lg outline-none" />
             </div>
           </div>
 
-          {/* Địa chỉ */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3">
               <h3 className="font-bold text-gray-800">Địa chỉ thường trú</h3>
@@ -328,18 +240,8 @@ export default function NhanKhauModal({
           </div>
 
           <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors"
-            >
-              Hủy bỏ
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-6 py-2.5 bg-black text-white rounded-xl hover:bg-gray-800 font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-70"
-            >
+            <button type="button" onClick={onClose} className="px-5 py-2.5 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl font-medium transition-colors">Hủy bỏ</button>
+            <button type="submit" disabled={isLoading} className="px-6 py-2.5 bg-black text-white rounded-xl hover:bg-gray-800 font-bold shadow-lg transition-all disabled:opacity-70">
               {isLoading ? "Đang xử lý..." : (initialData ? "Cập nhật" : "Thêm mới")}
             </button>
           </div>
