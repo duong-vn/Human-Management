@@ -68,10 +68,7 @@ export interface NhanKhauBasic {
 
 // Params cho API tạo hộ khẩu
 export interface CreateHoKhauParams {
-  chuHo: {
-    nhanKhauId: string;
-    hoTen: string;
-  };
+  chuHo: string; // ObjectId string của nhân khẩu làm chủ hộ
   diaChi: DiaChi;
   trangThai?: string;
   thanhVien?: {

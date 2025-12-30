@@ -68,10 +68,12 @@ export const themThanhVien = async (
 // Xóa thành viên khỏi hộ khẩu
 export const xoaThanhVien = async (
   hoKhauId: string,
-  nhanKhauId: string
+  nhanKhauId: string,
+  chuHoThayThe?: { nhanKhauId: string; hoTen: string }
 ): Promise<HoKhau> => {
   const res = await api.patch(
-    `/ho-khau/${hoKhauId}/xoa-thanh-vien/${nhanKhauId}`
+    `/ho-khau/${hoKhauId}/xoa-thanh-vien/${nhanKhauId}`,
+    chuHoThayThe ? { chuHoThayThe } : {}
   );
   return res.data;
 };

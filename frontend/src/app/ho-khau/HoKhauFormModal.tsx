@@ -142,25 +142,31 @@ export default function HoKhauFormModal({
       return;
     }
 
-    const data: CreateHoKhauParams = {
-      chuHo: {
-        nhanKhauId: chuHoId,
-        hoTen: chuHoTen,
-      },
-      thanhVien: [
-        {
-          nhanKhauId: chuHoId,
-          hoTen: chuHoTen,
-          quanHeVoiChuHo: "Chủ hộ",
-        },
-      ],
-
-      diaChi,
-      trangThai,
-      ghiChu,
-    };
-
-    onSubmit(data);
+    // Khi edit mode: chỉ gửi diaChi, trangThai, ghiChu (không gửi chuHo và thanhVien)
+    // Khi create mode: gửi đầy đủ bao gồm chuHo và thanhVien
+    if (isEditMode) {
+      const data: Partial<CreateHoKhauParams> = {
+        diaChi,
+        trangThai,
+        ghiChu,
+      };
+      onSubmit(data as CreateHoKhauParams);
+    } else {
+      const data: CreateHoKhauParams = {
+        chuHo: chuHoId,
+        thanhVien: [
+          {
+            nhanKhauId: chuHoId,
+            hoTen: chuHoTen,
+            quanHeVoiChuHo: "Chủ hộ",
+          },
+        ],
+        diaChi,
+        trangThai,
+        ghiChu,
+      };
+      onSubmit(data);
+    }
   };
 
   if (!isOpen) return null;
