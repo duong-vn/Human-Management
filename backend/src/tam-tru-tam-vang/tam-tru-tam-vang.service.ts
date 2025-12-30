@@ -39,7 +39,20 @@ export class TamTruTamVangService {
       nguoiDuyet: nguoiDuyetId,
       ngayDuyet: new Date(),
     });
-    return created.save();
+
+    const saved = await created.save();
+
+    // Cập nhật trạng thái nhân khẩu nếu có nhanKhauId
+    if (createDto.nhanKhauId) {
+      const newTrangThai = createDto.loai === 'Tạm trú' ? 'Tạm trú' : 'Tạm vắng';
+      await this.nhanKhauModel.findByIdAndUpdate(
+        createDto.nhanKhauId,
+        { trangThai: newTrangThai },
+        { new: true }
+      );
+    }
+
+    return saved;
   }
 
   async findAll(query?: {
@@ -87,14 +100,46 @@ export class TamTruTamVangService {
     id: string,
     updateDto: UpdateTamTruTamVangDto,
   ): Promise<TamTruTamVang | null> {
-    return this.tamTruTamVangModel
+    const existing = await this.tamTruTamVangModel.findById(id);
+    if (!existing) return null;
+
+    const updated = await this.tamTruTamVangModel
       .findByIdAndUpdate(id, updateDto, { new: true })
       .populate('nhanKhauId')
       .exec();
+
+    // Cập nhật trạng thái nhân khẩu nếu có thay đổi trạng thái
+    if (updated && updateDto.trangThai && existing.nhanKhauId) {
+      let newTrangThai = 'Thường trú';
+      if (updateDto.trangThai === 'Đang hiệu lực') {
+        newTrangThai = updated.loai === 'Tạm trú' ? 'Tạm trú' : 'Tạm vắng';
+      }
+      await this.nhanKhauModel.findByIdAndUpdate(
+        existing.nhanKhauId,
+        { trangThai: newTrangThai },
+        { new: true }
+      );
+    }
+
+    return updated;
   }
 
   async remove(id: string): Promise<TamTruTamVang | null> {
-    return this.tamTruTamVangModel.findByIdAndDelete(id).exec();
+    const existing = await this.tamTruTamVangModel.findById(id);
+    if (!existing) return null;
+
+    const deleted = await this.tamTruTamVangModel.findByIdAndDelete(id).exec();
+
+    // Reset trạng thái nhân khẩu về "Thường trú" nếu có nhanKhauId
+    if (existing.nhanKhauId) {
+      await this.nhanKhauModel.findByIdAndUpdate(
+        existing.nhanKhauId,
+        { trangThai: 'Thường trú' },
+        { new: true }
+      );
+    }
+
+    return deleted;
   }
 
   // Thống kê tạm trú/tạm vắng
