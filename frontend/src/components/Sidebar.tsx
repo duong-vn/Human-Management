@@ -31,6 +31,10 @@ const menuItems = [
     title: "Quản lý hộ khẩu",
     href: "/ho-khau",
     icon: UserGroupIcon,
+    submenu: [
+      { title: "Danh sách hộ khẩu", href: "/ho-khau" },
+      { title: "Thống kê hộ khẩu", href: "/ho-khau/thong-ke" },
+    ],
   },
   {
     title: "Quản lý nhân khẩu",
@@ -65,7 +69,6 @@ const menuItems = [
     icon: ChartBarIcon,
   },
 ];
-
 
 export default function Sidebar() {
   const pathname = usePathname();

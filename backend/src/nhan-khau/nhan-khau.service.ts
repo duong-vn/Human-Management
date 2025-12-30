@@ -152,7 +152,7 @@ export class NhanKhauService {
     if (query?.gioiTinh) {
       filter.gioiTinh = query.gioiTinh;
     }
-    return this.nhanKhauModel.find(filter).populate('hoKhauId').exec();
+    return this.nhanKhauModel.find(filter).exec();
   }
 
   async findOne(id: string): Promise<NhanKhau | null> {

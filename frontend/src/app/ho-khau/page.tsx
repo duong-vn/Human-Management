@@ -455,7 +455,9 @@ export default function HoKhauPage() {
                 <th className="p-4 pl-6">Mã hộ khẩu</th>
                 <th className="p-4">Chủ hộ</th>
                 <th className="p-4">Địa chỉ</th>
-                <th className="p-4 text-center">Số thành viên</th>
+                <th className="p-4 text-center">Số TV</th>
+                <th className="p-4 text-center">Ngày lập</th>
+                <th className="p-4">Ghi chú</th>
                 <th className="p-4 text-center">Trạng thái</th>
                 <th className="p-4 text-center">Thao tác</th>
               </tr>
@@ -468,6 +470,9 @@ export default function HoKhauPage() {
                   // Sử dụng helper function để lấy tên chủ hộ
                   const chuHoInfo = getChuHoInfo(hoKhau.chuHo);
                   const chuHoTen = chuHoInfo?.hoTen || "---";
+                  // Lấy thêm thông tin chủ hộ nếu đã populate
+                  const chuHoData =
+                    typeof hoKhau.chuHo === "object" ? hoKhau.chuHo : null;
 
                   return (
                     <motion.tr
@@ -479,43 +484,103 @@ export default function HoKhauPage() {
                       className="hover:bg-blue-50/50 transition-colors duration-200 group"
                     >
                       <td className="p-4 pl-6">
-                        <span className="font-mono text-sm text-gray-600">
+                        <span className="font-mono text-sm text-gray-600 bg-gray-100 px-2 py-1 rounded">
                           #{id.slice(-8).toUpperCase()}
                         </span>
                       </td>
 
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
-                            <Users size={16} />
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm shadow-sm">
+                            {chuHoTen.charAt(0).toUpperCase()}
                           </div>
-                          <span className="font-medium text-gray-800">
-                            {chuHoTen}
-                          </span>
+                          <div>
+                            <p className="font-medium text-gray-800">
+                              {chuHoTen}
+                            </p>
+                            {chuHoData?.gioiTinh && (
+                              <p className="text-xs text-gray-500">
+                                {chuHoData.gioiTinh}
+                                {chuHoData.ngaySinh &&
+                                  ` • ${new Date(
+                                    chuHoData.ngaySinh
+                                  ).getFullYear()}`}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </td>
 
                       <td className="p-4">
-                        <div className="flex items-center gap-2 text-gray-600 text-sm max-w-xs">
-                          <MapPin
-                            size={14}
-                            className="text-gray-400 shrink-0"
-                          />
-                          <span className="truncate">
-                            {formatDiaChi(hoKhau.diaChi)}
+                        <div className="max-w-xs">
+                          <div className="flex items-start gap-2 text-gray-700 text-sm">
+                            <MapPin
+                              size={14}
+                              className="text-gray-400 shrink-0 mt-0.5"
+                            />
+                            <div>
+                              <p className="font-medium">
+                                {hoKhau.diaChi?.soNha
+                                  ? `${hoKhau.diaChi.soNha} ${
+                                      hoKhau.diaChi.duong || ""
+                                    }`
+                                  : "---"}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {[
+                                  hoKhau.diaChi?.phuongXa,
+                                  hoKhau.diaChi?.quanHuyen,
+                                ]
+                                  .filter(Boolean)
+                                  .join(", ") || "---"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="p-4 text-center">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700">
+                          <Users size={14} />
+                          <span className="font-semibold text-sm">
+                            {hoKhau.thanhVien?.length || 0}
                           </span>
                         </div>
                       </td>
 
                       <td className="p-4 text-center">
-                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-medium text-sm">
-                          {hoKhau.thanhVien?.length || 0}
-                        </span>
+                        <div className="text-sm">
+                          <p className="text-gray-700 font-medium">
+                            {hoKhau.ngayLap
+                              ? new Date(hoKhau.ngayLap).toLocaleDateString(
+                                  "vi-VN"
+                                )
+                              : "---"}
+                          </p>
+                          {hoKhau.createdAt && (
+                            <p className="text-xs text-gray-400">
+                              Tạo:{" "}
+                              {new Date(hoKhau.createdAt).toLocaleDateString(
+                                "vi-VN"
+                              )}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="p-4">
+                        <p className="text-sm text-gray-600 max-w-[150px] truncate">
+                          {hoKhau.ghiChu || (
+                            <span className="text-gray-400 italic">
+                              Không có
+                            </span>
+                          )}
+                        </p>
                       </td>
 
                       <td className="p-4 text-center">
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium border ${getTrangThaiBadge(
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium border ${getTrangThaiBadge(
                             hoKhau.trangThai
                           )}`}
                         >
