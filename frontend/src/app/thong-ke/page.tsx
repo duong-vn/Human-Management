@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   getDanhSachDotThu,
   getChiTietHoDaNop,
@@ -21,12 +21,14 @@ export default function ThongKePage() {
   const [chiTietLoading, setChiTietLoading] = useState(false);
   const [chiTietFilterText, setChiTietFilterText] = useState<string>('');
   const [chiTietFilterStatus, setChiTietFilterStatus] = useState<string>('all');
+  const [chiTietFeeFilter, setChiTietFeeFilter] = useState<string>('');
   const [selectedHo, setSelectedHo] = useState<any | null>(null);
   const [lichSuHo, setLichSuHo] = useState<any | null>(null);
   const [lichSuLoading, setLichSuLoading] = useState(false);
   const [lichSuFilterText, setLichSuFilterText] = useState<string>('');
   const [lichSuFilterStatus, setLichSuFilterStatus] = useState<string>('all');
   const [selectedPhieu, setSelectedPhieu] = useState<any | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type?: 'info' | 'success' | 'error' } | null>(null);
 
   // Add CSS for animations
   useEffect(() => {
@@ -42,9 +44,20 @@ export default function ThongKePage() {
       .heading-emoji { display: inline-block; transition: transform 220ms ease; }
       .heading-emoji:hover { transform: translateY(-4px) rotate(-8deg); }
       .heading-underline { transform-origin: left; transform: scaleX(0); animation: underlineGrow 600ms cubic-bezier(0.2,0.8,0.2,1) forwards; }
+      .toast { position: fixed; right: 20px; bottom: 20px; min-width: 220px; max-width: 360px; z-index: 60; box-shadow: 0 10px 30px rgba(2,6,23,0.2); }
+      .toast-inner { padding: 12px 16px; border-radius: 12px; color: white; font-weight: 600; display:flex; gap:10px; align-items:center; }
+      .toast-info { background: linear-gradient(90deg,#2563eb,#7c3aed); }
+      .toast-success { background: linear-gradient(90deg,#10b981,#059669); }
+      .toast-error { background: linear-gradient(90deg,#ef4444,#dc2626); }
+      .toast-show { animation: fadeIn 320ms ease-out; }
     `;
     document.head.appendChild(style);
   }, []);
+
+  const showToast = (msg: string, type: 'info' | 'success' | 'error' = 'info') => {
+    setToast({ msg, type });
+    window.setTimeout(() => setToast(null), 4200);
+  };
 
   // Deduplicate and fetch list of đợt thu
   const fetchDotThu = useCallback(async () => {
@@ -71,6 +84,8 @@ export default function ThongKePage() {
       console.error(err);
       setError('Lỗi khi tải danh sách đợt thu');
       setDotThu([]);
+    } finally {
+      setLoading(false);
     }
   }, [nam]);
 
@@ -78,7 +93,51 @@ export default function ThongKePage() {
     fetchDotThu();
   }, [fetchDotThu]);
 
-  // Refresh data when selectedHo/selectedDot/nam changes
+  // Show popup when dot search yields no results
+  useEffect(() => {
+    if (!dotFilterText.trim()) return;
+    if (loading) return;
+    const q = dotFilterText.trim().toLowerCase();
+    const filtered = dotThu.filter((d: any) => (d.kyThu || '').toString().toLowerCase().includes(q));
+    if (filtered.length === 0) {
+      showToast(`Không tìm thấy kết quả cho "${dotFilterText}"`, 'info');
+    }
+  }, [dotFilterText, dotThu, loading]);
+
+  // Show popup when chi tiết hộ search yields no results
+  useEffect(() => {
+    if (!chiTietFilterText.trim()) return;
+    if (chiTietLoading) return;
+    const q = chiTietFilterText.trim().toLowerCase();
+    const combined = [...(chiTietHoDaNop || []), ...(chiTietHoChuaNop || [])];
+    const filtered = combined.filter((pt: any) => {
+      const name = (pt.tenChuHo || '').toString().toLowerCase();
+      const code = (pt.maPhieuThu || '').toString().toLowerCase();
+      const hid = (pt.hoKhauId?._id || pt.hoKhauId || '').toString().toLowerCase();
+      return name.includes(q) || code.includes(q) || hid.includes(q);
+    });
+    if (filtered.length === 0) {
+      showToast(`Không tìm thấy hộ nào cho "${chiTietFilterText}"`, 'info');
+    }
+  }, [chiTietFilterText, chiTietHoDaNop, chiTietHoChuaNop, chiTietLoading]);
+
+  // Show popup when lịch sử phiếu thu search yields no results
+  useEffect(() => {
+    if (!lichSuFilterText.trim()) return;
+    if (lichSuLoading) return;
+    const q = lichSuFilterText.trim().toLowerCase();
+    const list = lichSuHo?.danhSachPhieuThu || [];
+    const filtered = list.filter((phieu: any) => {
+      const code = (phieu.maPhieuThu || '').toString().toLowerCase();
+      const note = (phieu.ghiChu || '').toString().toLowerCase();
+      return code.includes(q) || note.includes(q);
+    });
+    if (filtered.length === 0) {
+      showToast(`Không tìm thấy phiếu thu cho "${lichSuFilterText}"`, 'info');
+    }
+  }, [lichSuFilterText, lichSuHo, lichSuLoading]);
+
+  // Refresh household history when selectedHo or year changes
   useEffect(() => {
     let mounted = true;
     const refresh = async () => {
@@ -86,15 +145,21 @@ export default function ThongKePage() {
         setLichSuLoading(true);
         const data = await getLichSuHo(selectedHo, nam);
         if (!mounted) return;
+        // Deduplicate danhSachPhieuThu by _id or maPhieuThu
+        if (data && Array.isArray(data.danhSachPhieuThu)) {
+          const seen = new Map<string, any>();
+          const deduped = [] as any[];
+          for (const ph of data.danhSachPhieuThu) {
+            const key = ph._id ?? ph.maPhieuThu ?? JSON.stringify(ph);
+            if (!seen.has(key)) {
+              seen.set(key, true);
+              deduped.push(ph);
+            }
+          }
+          data.danhSachPhieuThu = deduped;
+        }
         setLichSuHo(data || null);
         setLichSuLoading(false);
-      }
-      if (selectedDot) {
-        setChiTietLoading(true);
-        const data = await getChiTietHoDaNop(selectedDot, nam);
-        if (!mounted) return;
-        setChiTietHoDaNop(Array.isArray(data) ? data : []);
-        setChiTietLoading(false);
       }
     };
 
@@ -102,7 +167,7 @@ export default function ThongKePage() {
     return () => {
       mounted = false;
     };
-  }, [selectedHo, selectedDot, nam]);
+  }, [selectedHo, nam]);
 
   const openDotDetails = async (kyThu: string) => {
     setChiTietLoading(true);
@@ -114,6 +179,19 @@ export default function ThongKePage() {
       console.log('getChiTietHoChuaNop response:', dataChuaNop);
       setChiTietHoDaNop(Array.isArray(dataDaNop) ? dataDaNop : []);
       setChiTietHoChuaNop(Array.isArray(dataChuaNop) ? dataChuaNop : []);
+      // Auto-select first household (prefer paid list, else unpaid) and load its history
+      const firstHoId = (Array.isArray(dataDaNop) && dataDaNop.length > 0)
+        ? (dataDaNop[0].hoKhauId?._id ?? dataDaNop[0].hoKhauId)
+        : (Array.isArray(dataChuaNop) && dataChuaNop.length > 0)
+          ? (dataChuaNop[0].hoKhauId?._id ?? dataChuaNop[0].hoKhauId)
+          : null;
+      if (firstHoId) {
+        // openHoDetails will set selectedHo and fetch its history
+        await openHoDetails(firstHoId);
+      } else {
+        setSelectedHo(null);
+        setLichSuHo(null);
+      }
     } catch (err) {
       console.error('Lỗi khi tải chi tiết:', err);
       setChiTietHoDaNop([]);
@@ -134,12 +212,26 @@ export default function ThongKePage() {
       setLichSuHo(null);
       setLichSuLoading(false);
       setError('Không có mã hộ khẩu cho phiếu thu này.');
+      showToast('Không có mã hộ khẩu cho phiếu thu này.', 'error');
       return;
     }
 
     setSelectedHo(hoKhauId);
     const data = await getLichSuHo(hoKhauId, nam);
     console.log('getLichSuHo response:', data);
+    // Deduplicate danhSachPhieuThu before setting state
+    if (data && Array.isArray(data.danhSachPhieuThu)) {
+      const seen = new Map<string, any>();
+      const deduped = [] as any[];
+      for (const ph of data.danhSachPhieuThu) {
+        const key = ph._id ?? ph.maPhieuThu ?? JSON.stringify(ph);
+        if (!seen.has(key)) {
+          seen.set(key, true);
+          deduped.push(ph);
+        }
+      }
+      data.danhSachPhieuThu = deduped;
+    }
     setLichSuHo(data || null);
     // reset filters when opening household
     setLichSuFilterText('');
@@ -160,6 +252,26 @@ export default function ThongKePage() {
     const n = Number(v);
     return isNaN(n) ? String(v) : n.toLocaleString('vi-VN');
   };
+
+  // Compute derived totals for lịch sử (include chiTietThu amounts — covers đóng góp/ủng hộ)
+  const derivedLichSuTotals = useMemo(() => {
+    const list = lichSuHo?.danhSachPhieuThu ?? [];
+    let daNop = 0;
+    let conNo = 0;
+    for (const ph of list) {
+      let sum = 0;
+      if (Array.isArray(ph.chiTietThu) && ph.chiTietThu.length > 0) {
+        sum = ph.chiTietThu.reduce((s: number, ct: any) => s + (Number(ct.soTien) || 0), 0);
+      } else {
+        sum = Number(ph.tongTien) || 0;
+      }
+
+      if (ph.trangThai === 'Đã thu') daNop += sum;
+      else if (ph.trangThai === 'Đang nợ') conNo += sum;
+      else daNop += sum; // default treat as paid for summary
+    }
+    return { daNop, conNo };
+  }, [lichSuHo]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6">
@@ -196,17 +308,7 @@ export default function ThongKePage() {
         </div>
       </div>
 
-      {/* Loading State */}
-      {loading && (
-        <div className="animate-fade-in mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
-          <div className="flex items-center gap-3">
-            <div className="animate-pulse-light">
-              <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
-            </div>
-            <span className="text-blue-700 font-medium">Đang tải dữ liệu...</span>
-          </div>
-        </div>
-      )}
+      {/* Global loading indicator removed for a cleaner UI */}
 
       {/* Error State */}
       {error && (
@@ -332,8 +434,8 @@ export default function ThongKePage() {
                       key={page}
                       onClick={() => setDotCurrentPage(page)}
                       className={`px-3 py-2 rounded-lg font-semibold transition ${dotCurrentPage === page
-                          ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white'
-                          : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white'
+                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                         }`}
                     >
                       {page}
@@ -399,6 +501,25 @@ export default function ThongKePage() {
                   </button>
                   <span className="text-sm text-gray-500">Hiện tối đa 5 hộ, kéo để xem thêm</span>
                 </div>
+                {/* Fee search for monthly funds */}
+                {selectedDot && selectedDot.toLowerCase().includes('tháng') && (
+                  <div className="mb-4 flex items-center gap-3">
+                    <input
+                      type="search"
+                      placeholder="Tìm phí (ví dụ: Điện, Vệ sinh, Đóng góp...)"
+                      value={chiTietFeeFilter}
+                      onChange={(e) => setChiTietFeeFilter(e.target.value)}
+                      className="border border-gray-200 rounded-lg px-3 py-2 w-full md:w-96 focus:outline-none focus:border-amber-400"
+                    />
+                    <button
+                      onClick={() => setChiTietFeeFilter('')}
+                      className="px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-700 hover:bg-gray-200"
+                    >
+                      ✕
+                    </button>
+                    <span className="text-sm text-gray-500">Lọc theo khoản phí</span>
+                  </div>
+                )}
                 {/* Hộ đã nộp */}
                 <div className="mb-8">
                   <div className="mb-4">
@@ -434,18 +555,24 @@ export default function ThongKePage() {
                           {chiTietHoDaNop
                             ?.filter((pt: any) => {
                               const q = chiTietFilterText.trim().toLowerCase();
+                              const feeQ = chiTietFeeFilter.trim().toLowerCase();
                               if (q) {
                                 const name = (pt.tenChuHo || '').toString().toLowerCase();
                                 const code = (pt.maPhieuThu || '').toString().toLowerCase();
                                 const hid = (pt.hoKhauId?._id || pt.hoKhauId || '').toString().toLowerCase();
                                 if (!name.includes(q) && !code.includes(q) && !hid.includes(q)) return false;
                               }
+                              if (feeQ) {
+                                const fees = (pt.chiTietThu || []).map((ct: any) => (ct.tenKhoanThu || '').toString().toLowerCase());
+                                if (!fees.some((f: string) => f.includes(feeQ))) return false;
+                              }
                               return true;
                             })
                             .map((pt: any) => (
                               <tr
                                 key={pt._id}
-                                className="border-b border-gray-200 hover:bg-green-50 transition-colors"
+                                onClick={() => openHoDetails(pt.hoKhauId?._id ?? pt.hoKhauId)}
+                                className="border-b border-gray-200 hover:bg-green-50 transition-colors cursor-pointer"
                               >
                                 <td className="px-4 py-3 font-mono text-sm font-semibold text-blue-600">{pt.maPhieuThu}</td>
                                 {selectedDot && selectedDot.toLowerCase().includes('tháng') && (
@@ -473,7 +600,7 @@ export default function ThongKePage() {
                                 </td>
                                 <td className="px-4 py-3 text-center">
                                   <button
-                                    onClick={() => openHoDetails(pt.hoKhauId?._id ?? pt.hoKhauId)}
+                                    onClick={(e) => { e.stopPropagation(); openHoDetails(pt.hoKhauId?._id ?? pt.hoKhauId); }}
                                     className="inline-block bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-3 py-2 rounded-lg text-sm font-bold hover:shadow-lg transition-all transform hover:scale-105 active:scale-95"
                                   >
                                     Chi tiết
@@ -522,18 +649,24 @@ export default function ThongKePage() {
                           {chiTietHoChuaNop
                             ?.filter((pt: any) => {
                               const q = chiTietFilterText.trim().toLowerCase();
+                              const feeQ = chiTietFeeFilter.trim().toLowerCase();
                               if (q) {
                                 const name = (pt.tenChuHo || '').toString().toLowerCase();
                                 const code = (pt.maPhieuThu || '').toString().toLowerCase();
                                 const hid = (pt.hoKhauId?._id || pt.hoKhauId || '').toString().toLowerCase();
                                 if (!name.includes(q) && !code.includes(q) && !hid.includes(q)) return false;
                               }
+                              if (feeQ) {
+                                const fees = (pt.chiTietThu || []).map((ct: any) => (ct.tenKhoanThu || '').toString().toLowerCase());
+                                if (!fees.some((f: string) => f.includes(feeQ))) return false;
+                              }
                               return true;
                             })
                             .map((pt: any) => (
                               <tr
                                 key={pt._id}
-                                className="border-b border-gray-200 hover:bg-red-50 transition-colors"
+                                onClick={() => openHoDetails(pt.hoKhauId?._id ?? pt.hoKhauId)}
+                                className="border-b border-gray-200 hover:bg-red-50 transition-colors cursor-pointer"
                               >
                                 <td className="px-4 py-3 font-mono text-sm font-semibold text-blue-600">{pt.maPhieuThu}</td>
                                 {selectedDot && selectedDot.toLowerCase().includes('tháng') && (
@@ -566,7 +699,7 @@ export default function ThongKePage() {
                                 </td>
                                 <td className="px-4 py-3 text-center">
                                   <button
-                                    onClick={() => openHoDetails(pt.hoKhauId?._id ?? pt.hoKhauId)}
+                                    onClick={(e) => { e.stopPropagation(); openHoDetails(pt.hoKhauId?._id ?? pt.hoKhauId); }}
                                     className="inline-block bg-gradient-to-r from-red-500 to-rose-500 text-white px-3 py-2 rounded-lg text-sm font-bold hover:shadow-lg transition-all transform hover:scale-105 active:scale-95"
                                   >
                                     Chi tiết
@@ -611,7 +744,7 @@ export default function ThongKePage() {
                   <div>
                     <p className="text-green-700 font-semibold text-sm mb-1">✓ Đã nộp</p>
                     <p className="text-3xl font-bold text-green-600">
-                      {formatVND(lichSuHo?.tongKet?.daNop ?? 0)}
+                      {formatVND(Math.max(derivedLichSuTotals.daNop, Number(lichSuHo?.tongKet?.daNop ?? 0)))}
                     </p>
                     <p className="text-green-600 text-xs mt-2">đ</p>
                   </div>
@@ -625,7 +758,7 @@ export default function ThongKePage() {
                   <div>
                     <p className="text-red-700 font-semibold text-sm mb-1">⚠ Còn nợ</p>
                     <p className="text-3xl font-bold text-red-600">
-                      {formatVND(lichSuHo?.tongKet?.conNo ?? 0)}
+                      {formatVND(Math.max(derivedLichSuTotals.conNo, Number(lichSuHo?.tongKet?.conNo ?? 0)))}
                     </p>
                     <p className="text-red-600 text-xs mt-2">đ</p>
                   </div>
@@ -788,6 +921,12 @@ export default function ThongKePage() {
           </div>
         )}
       </div>
+      {/* Toast / Popup */}
+      {toast && (
+        <div className="toast">
+          <div className={`toast-inner toast-${toast.type || 'info'} toast-show`}>{toast.msg}</div>
+        </div>
+      )}
     </div>
   );
 }
