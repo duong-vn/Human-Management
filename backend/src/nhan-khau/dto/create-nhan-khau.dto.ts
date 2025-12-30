@@ -28,7 +28,7 @@ export class CreateNhanKhauDto {
   @IsString()
   hoTen: string;
 
-  @IsNotEmpty({ message: 'Bí danh không được để trống' })
+  @IsOptional()
   @IsString()
   biDanh: string;
 

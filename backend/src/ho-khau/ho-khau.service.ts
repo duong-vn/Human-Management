@@ -97,18 +97,34 @@ export class HoKhauService {
       nguoiThucHien: data.nguoiThucHien,
     };
 
-    return this.hoKhauModel
-      .findByIdAndUpdate(
-        hoKhauId,
-        {
-          $set: {
-            chuHo: new Types.ObjectId(data.chuHoMoiId),
-          },
-          $push: { lichSuThayDoi: lichSu },
+    // Reset tất cả quanHeVoiChuHo thành "Vui lòng nhập quan hệ"
+    await this.hoKhauModel.findByIdAndUpdate(hoKhauId, {
+      $set: {
+        'thanhVien.$[].quanHeVoiChuHo': 'Vui lòng nhập quan hệ',
+      },
+    });
+
+    // Cập nhật chủ hộ mới và đặt quanHeVoiChuHo của chủ hộ mới là "Chủ hộ"
+    await this.hoKhauModel.findByIdAndUpdate(
+      hoKhauId,
+      {
+        $set: {
+          chuHo: new Types.ObjectId(data.chuHoMoiId),
+          'thanhVien.$[elem].quanHeVoiChuHo': 'Chủ hộ',
         },
-        { new: true },
-      )
+        $push: { lichSuThayDoi: lichSu },
+      },
+      {
+        arrayFilters: [
+          { 'elem.nhanKhauId': new Types.ObjectId(data.chuHoMoiId) },
+        ],
+      },
+    );
+
+    return this.hoKhauModel
+      .findById(hoKhauId)
       .populate('chuHo')
+      .populate('thanhVien.nhanKhauId')
       .exec();
   }
 
@@ -173,7 +189,7 @@ export class HoKhauService {
       }
     }
 
-    // Tạo hộ khẩu mới
+    // Tạo hộ khẩu mới - quan hệ sẽ là "Vui lòng nhập quan hệ" trừ chủ hộ
     const hoKhauMoi = new this.hoKhauModel({
       chuHo: new Types.ObjectId(data.chuHoMoi.nhanKhauId),
       diaChi: data.diaChi,
@@ -183,7 +199,7 @@ export class HoKhauService {
         quanHeVoiChuHo:
           tv.nhanKhauId === data.chuHoMoi.nhanKhauId
             ? 'Chủ hộ'
-            : tv.quanHeVoiChuHo || 'Khác',
+            : 'Vui lòng nhập quan hệ',
       })),
       ngayLap: new Date(),
       trangThai: 'Đang hoạt động',
@@ -239,22 +255,22 @@ export class HoKhauService {
         nguoiThucHien: data.nguoiThucHien,
       };
 
-      // Cập nhật chủ hộ mới
+      // Reset tất cả quanHeVoiChuHo thành "Vui lòng nhập quan hệ"
       await this.hoKhauModel.findByIdAndUpdate(data.hoKhauGocId, {
         $set: {
-          chuHo: new Types.ObjectId(data.chuHoMoiChoHoGoc.nhanKhauId),
+          'thanhVien.$[].quanHeVoiChuHo': 'Vui lòng nhập quan hệ',
         },
-        $push: { lichSuThayDoi: lichSuDoiChuHo },
       });
 
-      // Cập nhật quan hệ của các thành viên còn lại với chủ hộ mới
-      // Chủ hộ mới -> quanHeVoiChuHo = "Chủ hộ"
+      // Cập nhật chủ hộ mới và đặt quanHeVoiChuHo của chủ hộ mới là "Chủ hộ"
       await this.hoKhauModel.findByIdAndUpdate(
         data.hoKhauGocId,
         {
           $set: {
+            chuHo: new Types.ObjectId(data.chuHoMoiChoHoGoc.nhanKhauId),
             'thanhVien.$[elem].quanHeVoiChuHo': 'Chủ hộ',
           },
+          $push: { lichSuThayDoi: lichSuDoiChuHo },
         },
         {
           arrayFilters: [
@@ -333,6 +349,7 @@ export class HoKhauService {
       .findByIdAndUpdate(
         hoKhauId,
         {
+          $set: { trangThai: 'Đang hoạt động' },
           $push: {
             thanhVien: {
               nhanKhauId: new Types.ObjectId(thanhVien.nhanKhauId),
