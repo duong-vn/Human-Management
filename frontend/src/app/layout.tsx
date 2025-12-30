@@ -4,6 +4,7 @@ import "./globals.css";
 import MainLayout from "@/components/MainLayout";
 import { Toaster } from "sonner";
 import Boostrap from "@/components/Boostrap";
+import Providers from "./Providers"; // Bạn đã import ở đây rồi
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,10 +32,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Toaster position="top-right" richColors closeButton />
-        <Boostrap>
-          <MainLayout>{children}</MainLayout>
-        </Boostrap>
+        {/* --- SỬA Ở ĐÂY: Bọc Providers ra ngoài cùng --- */}
+        <Providers>
+          <Toaster position="top-left" richColors closeButton />
+
+          <Boostrap>
+            <MainLayout>{children}</MainLayout>
+          </Boostrap>
+        </Providers>
+        {/* ----------------------------------------------- */}
       </body>
     </html>
   );

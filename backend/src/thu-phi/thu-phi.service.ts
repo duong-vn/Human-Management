@@ -9,7 +9,7 @@ import { ThuPhi, ThuPhiDocument } from './schemas/thu-phi.schema';
 export class ThuPhiService {
   constructor(
     @InjectModel(ThuPhi.name) private thuPhiModel: Model<ThuPhiDocument>,
-  ) {}
+  ) { }
 
   async create(
     createThuPhiDto: CreateThuPhiDto,
@@ -195,5 +195,252 @@ export class ThuPhiService {
   async generateMaPhieuThu(nam: number): Promise<string> {
     const count = await this.thuPhiModel.countDocuments({ nam });
     return `PT-${nam}-${String(count + 1).padStart(4, '0')}`;
+  }
+
+  // ====== API CHO CÁN BỘ KẾ TOÁN ======
+
+  // Thống kê theo đợt thu (kyThu) - tổng tiền, số hộ đã nộp
+  async thongKeTheoDotThu(kyThu: string, nam?: number): Promise<any> {
+    const filter: any = { kyThu, trangThai: 'Đã thu' };
+    if (nam) filter.nam = nam;
+
+    const result = await this.thuPhiModel.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: null,
+          tongTien: { $sum: '$tongTien' },
+          soPhieuThu: { $sum: 1 },
+          soHoDaNop: { $addToSet: '$hoKhauId' },
+          chiTietKhoanThu: {
+            $push: {
+              hoKhauId: '$hoKhauId',
+              tenChuHo: '$tenChuHo',
+              diaChi: '$diaChi',
+              tongTien: '$tongTien',
+              chiTietThu: '$chiTietThu',
+              ngayThu: '$ngayThu',
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          tongTien: 1,
+          soPhieuThu: 1,
+          soHoDaNop: { $size: '$soHoDaNop' },
+        },
+      },
+    ]);
+
+    return result[0] || { tongTien: 0, soPhieuThu: 0, soHoDaNop: 0 };
+  }
+
+  // Danh sách các đợt thu trong năm
+  async getDanhSachDotThu(nam: number): Promise<any[]> {
+    return this.thuPhiModel.aggregate([
+      { $match: { nam } },
+      {
+        $group: {
+          _id: '$kyThu',
+          tongTien: {
+            $sum: {
+              $cond: [{ $eq: ['$trangThai', 'Đã thu'] }, '$tongTien', 0],
+            },
+          },
+          soHoDaNop: {
+            $addToSet: {
+              $cond: [{ $eq: ['$trangThai', 'Đã thu'] }, '$hoKhauId', null],
+            },
+          },
+          soHoChuaNop: {
+            $addToSet: {
+              $cond: [{ $ne: ['$trangThai', 'Đã thu'] }, '$hoKhauId', null],
+            },
+          },
+          tongPhieuThu: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          kyThu: '$_id',
+          tongTien: 1,
+          soHoDaNop: {
+            $size: {
+              $filter: {
+                input: '$soHoDaNop',
+                cond: { $ne: ['$$this', null] },
+              },
+            },
+          },
+          soHoChuaNop: {
+            $size: {
+              $filter: {
+                input: '$soHoChuaNop',
+                cond: { $ne: ['$$this', null] },
+              },
+            },
+          },
+          tongPhieuThu: 1,
+        },
+      },
+      { $sort: { kyThu: 1 } },
+    ]);
+  }
+
+  // Chi tiết từng hộ đã nộp trong đợt thu
+  async getChiTietHoDaNopTheoDot(
+    kyThu: string,
+    nam?: number,
+  ): Promise<ThuPhi[]> {
+    const filter: any = { kyThu, trangThai: 'Đã thu' };
+    if (nam) filter.nam = nam;
+
+    return this.thuPhiModel
+      .find(filter)
+      .populate('hoKhauId')
+      .populate('nguoiThu', 'hoTen username')
+      .sort({ ngayThu: -1 })
+      .exec();
+  }
+
+  // Chi tiết từng hộ chưa nộp trong đợt thu
+  async getChiTietHoChuaNopTheoDot(
+    kyThu: string,
+    nam?: number,
+  ): Promise<ThuPhi[]> {
+    const filter: any = {
+      kyThu,
+      trangThai: { $in: ['Chưa thu', 'Đang nợ'] },
+    };
+    if (nam) filter.nam = nam;
+
+    return this.thuPhiModel
+      .find(filter)
+      .populate('hoKhauId')
+      .sort({ ngayThu: -1 })
+      .exec();
+  }
+
+  // Thống kê tổng quan cho kế toán
+  async thongKeTongQuan(nam: number): Promise<any> {
+    const thongKeChung = await this.thuPhiModel.aggregate([
+      { $match: { nam } },
+      {
+        $facet: {
+          tongQuan: [
+            {
+              $group: {
+                _id: '$trangThai',
+                tongTien: { $sum: '$tongTien' },
+                soPhieu: { $sum: 1 },
+                danhSachHo: { $addToSet: '$hoKhauId' },
+              },
+            },
+          ],
+          theoThang: [
+            { $match: { trangThai: 'Đã thu' } },
+            {
+              $group: {
+                _id: { $month: '$ngayThu' },
+                tongTien: { $sum: '$tongTien' },
+                soPhieu: { $sum: 1 },
+              },
+            },
+            { $sort: { _id: 1 } },
+          ],
+          theoKhoanThu: [
+            { $match: { trangThai: 'Đã thu' } },
+            { $unwind: '$chiTietThu' },
+            {
+              $group: {
+                _id: '$chiTietThu.tenKhoanThu',
+                tongTien: { $sum: '$chiTietThu.soTien' },
+                soLuot: { $sum: 1 },
+              },
+            },
+            { $sort: { tongTien: -1 } },
+          ],
+        },
+      },
+    ]);
+
+    const data = thongKeChung[0];
+
+    // Xử lý tổng quan
+    const daThu = data.tongQuan.find((x) => x._id === 'Đã thu') || {
+      tongTien: 0,
+      soPhieu: 0,
+      danhSachHo: [],
+    };
+    const chuaThu = data.tongQuan.find((x) => x._id === 'Chưa thu') || {
+      tongTien: 0,
+      soPhieu: 0,
+      danhSachHo: [],
+    };
+    const dangNo = data.tongQuan.find((x) => x._id === 'Đang nợ') || {
+      tongTien: 0,
+      soPhieu: 0,
+      danhSachHo: [],
+    };
+
+    return {
+      nam,
+      tongQuan: {
+        daThu: {
+          tongTien: daThu.tongTien,
+          soPhieu: daThu.soPhieu,
+          soHo: daThu.danhSachHo.length,
+        },
+        chuaThu: {
+          tongTien: chuaThu.tongTien,
+          soPhieu: chuaThu.soPhieu,
+          soHo: chuaThu.danhSachHo.length,
+        },
+        dangNo: {
+          tongTien: dangNo.tongTien,
+          soPhieu: dangNo.soPhieu,
+          soHo: dangNo.danhSachHo.length,
+        },
+      },
+      theoThang: data.theoThang.map((item) => ({
+        thang: item._id,
+        tongTien: item.tongTien,
+        soPhieu: item.soPhieu,
+      })),
+      theoKhoanThu: data.theoKhoanThu,
+    };
+  }
+
+  // Lịch sử nộp tiền của một hộ khẩu
+  async getLichSuNopTien(hoKhauId: string, nam?: number): Promise<any> {
+    const filter: any = { hoKhauId: new Types.ObjectId(hoKhauId) };
+    if (nam) filter.nam = nam;
+
+    const phieuThu = await this.thuPhiModel
+      .find(filter)
+      .populate('nguoiThu', 'hoTen username')
+      .sort({ ngayThu: -1 })
+      .exec();
+
+    // Tính tổng theo trạng thái
+    const tongKet = phieuThu.reduce(
+      (acc, pt) => {
+        if (pt.trangThai === 'Đã thu') {
+          acc.daNop += pt.tongTien;
+        } else {
+          acc.conNo += pt.tongTien;
+        }
+        return acc;
+      },
+      { daNop: 0, conNo: 0 },
+    );
+
+    return {
+      hoKhauId,
+      tongKet,
+      danhSachPhieuThu: phieuThu,
+    };
   }
 }

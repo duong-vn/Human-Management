@@ -85,6 +85,10 @@ export class NhanKhauController {
   create(@Body() createNhanKhauDto: CreateNhanKhauDto) {
     return this.nhanKhauService.create(createNhanKhauDto);
   }
+  @Post('them-nhieu')
+  themnhieu(@Body() createNhanKhauDto: CreateNhanKhauDto[]) {
+    return this.nhanKhauService.themNhieu(createNhanKhauDto);
+  }
 
   @Post('moi-sinh')
   @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO, UserRole.CAN_BO)
@@ -202,6 +206,12 @@ export class NhanKhauController {
   @ApiOperation({ summary: 'Thống kê tổng quan nhân khẩu' })
   thongKeTongQuan() {
     return this.nhanKhauService.thongKeTongQuan();
+  }
+
+  @Get('thong-ke/tuoi-trung-binh')
+  @ApiOperation({ summary: 'Tính tuổi trung bình của nhân khẩu' })
+  tinhTuoiTrungBinh() {
+    return this.nhanKhauService.tinhTuoiTrungBinh();
   }
 
   @Get('ho-khau/:hoKhauId')

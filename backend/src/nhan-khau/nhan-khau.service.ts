@@ -24,6 +24,16 @@ export class NhanKhauService {
     });
     return createdNhanKhau.save();
   }
+  async themNhieu(createNhanKhauDto: CreateNhanKhauDto[]): Promise<NhanKhau[]> {
+    const createdNhanKhau = createNhanKhauDto.map((dto) => {
+      const { hoKhauId, ...rest } = dto;
+      return new this.nhanKhauModel({
+        ...rest,
+        hoKhauId: hoKhauId ? new Types.ObjectId(hoKhauId) : undefined,
+      });
+    });
+    return this.nhanKhauModel.insertMany(createdNhanKhau);
+  }
 
   // Thêm nhân khẩu mới sinh
   async themMoiSinh(data: {
@@ -142,7 +152,7 @@ export class NhanKhauService {
     if (query?.gioiTinh) {
       filter.gioiTinh = query.gioiTinh;
     }
-    return this.nhanKhauModel.find(filter).populate('hoKhauId').exec();
+    return this.nhanKhauModel.find(filter).exec();
   }
 
   async findOne(id: string): Promise<NhanKhau | null> {
@@ -282,6 +292,51 @@ export class NhanKhauService {
       tamVang,
       daChuyenDi,
       daQuaDoi,
+    };
+  }
+
+  // Tính tuổi trung bình
+  async tinhTuoiTrungBinh(): Promise<any> {
+    const now = new Date();
+    const result = await this.nhanKhauModel.aggregate([
+      { $match: { trangThai: { $in: ['Thường trú', 'Tạm trú'] } } },
+      {
+        $addFields: {
+          tuoi: {
+            $floor: {
+              $divide: [
+                { $subtract: [now, '$ngaySinh'] },
+                365.25 * 24 * 60 * 60 * 1000,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          tuoiTrungBinh: { $avg: '$tuoi' },
+          soLuong: { $sum: 1 },
+          tuoiNhoNhat: { $min: '$tuoi' },
+          tuoiLonNhat: { $max: '$tuoi' },
+        },
+      },
+    ]);
+
+    if (result.length === 0) {
+      return {
+        tuoiTrungBinh: 0,
+        soLuong: 0,
+        tuoiNhoNhat: 0,
+        tuoiLonNhat: 0,
+      };
+    }
+
+    return {
+      tuoiTrungBinh: Math.round(result[0].tuoiTrungBinh * 10) / 10, // Làm tròn 1 chữ số thập phân
+      soLuong: result[0].soLuong,
+      tuoiNhoNhat: result[0].tuoiNhoNhat,
+      tuoiLonNhat: result[0].tuoiLonNhat,
     };
   }
 

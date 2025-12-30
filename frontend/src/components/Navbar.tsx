@@ -23,7 +23,10 @@ export default function Navbar() {
       setUser((prev) => (prev === nextUser ? prev : nextUser));
     };
     sync();
-    return subscribeAuth(sync);
+    const unsubscribe = subscribeAuth(sync);
+    return () => {
+      unsubscribe();
+    };
   }, []);
   if (isAuthPage) return null;
 
@@ -48,7 +51,7 @@ export default function Navbar() {
       <div className="px-6 py-3 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-9 h-9 bg-gradient-to-br from-stone-600 to-stone-700 rounded-lg flex items-center justify-center text-white font-bold shadow-sm group-hover:from-stone-500 group-hover:to-stone-600 transition-all">
+          <div className="w-9 h-9 bg-linear-to-br from-stone-600 to-stone-700 rounded-lg flex items-center justify-center text-white font-bold shadow-sm group-hover:from-stone-500 group-hover:to-stone-600 transition-all">
             B
           </div>
           <span className="text-lg font-bold text-stone-100 group-hover:text-white transition">

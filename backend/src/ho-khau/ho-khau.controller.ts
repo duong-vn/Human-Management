@@ -11,7 +11,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { HoKhauService } from './ho-khau.service';
-import { CreateHoKhauDto, DiaChi } from './dto/create-ho-khau.dto';
+import { CreateHoKhauDto, DiaChi, ThanhVien } from './dto/create-ho-khau.dto';
 import { UpdateHoKhauDto } from './dto/update-ho-khau.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -87,10 +87,22 @@ export class HoKhauController {
           quanHuyen: 'Quận 3',
           tinhThanh: 'TP. Hồ Chí Minh',
         },
-        danhSachNhanKhauId: [
-          '694cb3d6ab52b519fd76b918',
-          '6926c6af840b406838006a28',
+        danhSachNhanKhauMoi: [
+          {
+            nhanKhauId: '694cb3d6ab52b519fd76b918',
+            hoTen: 'Nguyễn Văn A',
+            quanHeVoiChuHo: 'Chủ hộ',
+          },
+          {
+            nhanKhauId: '6926c6af840b406838006a28',
+            hoTen: 'Trần Thị B',
+            quanHeVoiChuHo: 'Vợ',
+          },
         ],
+        chuHoMoiChoHoGoc: {
+          nhanKhauId: '694cb9093eeb3ec342ef4d0e',
+          hoTen: 'Vợ của Nguyễn Tuấn Dương',
+        },
       },
     },
   })
@@ -100,7 +112,8 @@ export class HoKhauController {
       hoKhauGocId: string;
       chuHoMoi: { nhanKhauId: string; hoTen: string };
       diaChi: DiaChi;
-      danhSachNhanKhauId: string[];
+      danhSachNhanKhauMoi: ThanhVien[];
+      chuHoMoiChoHoGoc?: { nhanKhauId: string; hoTen: string };
     },
     @Request() req,
   ) {
@@ -176,6 +189,29 @@ export class HoKhauController {
     return this.hoKhauService.update(id, updateHoKhauDto, req.user.username);
   }
 
+  @Patch(':id/cap-nhat-thanh-vien/:nhanKhauId')
+  @ApiOperation({ summary: 'Cập nhật quan hệ với chủ hộ' })
+  @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO)
+  @ApiBody({
+    schema: {
+      example: {
+        quanHeVoiChuHo: 'Con nuôi',
+      },
+    },
+  })
+  capNhatQuanHe(
+    @Param('id') id: string,
+    @Param('nhanKhauId') nhanKhauId: string,
+    @Body() data: { quanHeVoiChuHo: string },
+    @Request() req,
+  ) {
+    return this.hoKhauService.capNhatQuanHe(
+      id,
+      nhanKhauId,
+      data.quanHeVoiChuHo,
+      req.user.username,
+    );
+  }
   @Patch(':id/thay-doi-chu-ho')
   @Roles(UserRole.TO_TRUONG, UserRole.TO_PHO)
   @ApiOperation({ summary: 'Thay đổi chủ hộ' })
@@ -225,12 +261,30 @@ export class HoKhauController {
 
   @Patch(':id/xoa-thanh-vien/:nhanKhauId')
   @ApiOperation({ summary: 'Xóa thành viên khỏi hộ khẩu' })
+  @ApiBody({
+    schema: {
+      example: {
+        chuHoThayThe: {
+          nhanKhauId: '691d9631baac1efb7579cf13',
+          hoTen: 'Trần Minh Anh',
+        },
+      },
+      description:
+        'Nếu xóa chủ hộ và còn thành viên khác, cần truyền chuHoThayThe',
+    },
+  })
   xoaThanhVien(
     @Param('id') id: string,
     @Param('nhanKhauId') nhanKhauId: string,
+    @Body() body: { chuHoThayThe?: { nhanKhauId: string; hoTen: string } },
     @Request() req,
   ) {
-    return this.hoKhauService.xoaThanhVien(id, nhanKhauId, req.user.username);
+    return this.hoKhauService.xoaThanhVien(
+      id,
+      nhanKhauId,
+      req.user.username,
+      body?.chuHoThayThe,
+    );
   }
 
   @Delete(':id')

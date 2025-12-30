@@ -1,10 +1,13 @@
+import { Type } from 'class-transformer';
 import {
   IsNotEmpty,
   IsString,
   IsEmail,
   MinLength,
   IsOptional,
+  ValidateNested,
 } from 'class-validator';
+import { SoDinhDanh } from 'src/nhan-khau/dto/create-nhan-khau.dto';
 
 export class RegisterDto {
   @IsNotEmpty({ message: 'Họ tên không được để trống' })
@@ -24,6 +27,11 @@ export class RegisterDto {
   @IsString()
   @MinLength(6, { message: 'Mật khẩu phải có ít nhất 6 ký tự' })
   password: string;
+
+  @IsNotEmpty()
+  @ValidateNested()
+  @Type(() => SoDinhDanh)
+  soDinhDanh: SoDinhDanh;
 
   @IsOptional()
   @IsString()

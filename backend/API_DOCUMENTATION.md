@@ -660,6 +660,162 @@ GET /api/thu-phi/ho-khau/:hoKhauId
 Authorization: Bearer <token>
 ```
 
+### 6.8. Thống kê tổng quan cho kế toán
+
+```http
+GET /api/thu-phi/ke-toan/tong-quan/:nam
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+```json
+{
+  "nam": 2025,
+  "tongQuan": {
+    "daThu": {
+      "tongTien": 150000000,
+      "soPhieu": 380,
+      "soHo": 350
+    },
+    "chuaThu": {
+      "tongTien": 20000000,
+      "soPhieu": 50,
+      "soHo": 45
+    },
+    "dangNo": {
+      "tongTien": 5000000,
+      "soPhieu": 10,
+      "soHo": 8
+    }
+  },
+  "theoThang": [
+    { "thang": 1, "tongTien": 50000000, "soPhieu": 120 },
+    { "thang": 2, "tongTien": 45000000, "soPhieu": 110 }
+  ],
+  "theoKhoanThu": [
+    { "_id": "Phí vệ sinh tháng 1/2025", "tongTien": 30000000, "soLuot": 200 },
+    { "_id": "Phí dịch vụ tháng 1/2025", "tongTien": 20000000, "soLuot": 180 }
+  ]
+}
+```
+
+### 6.9. Danh sách các đợt thu trong năm
+
+```http
+GET /api/thu-phi/ke-toan/dot-thu/:nam
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+```json
+[
+  {
+    "kyThu": "Tháng 1/2025",
+    "tongTien": 50000000,
+    "soHoDaNop": 320,
+    "soHoChuaNop": 30,
+    "tongPhieuThu": 350
+  },
+  {
+    "kyThu": "Tháng 2/2025",
+    "tongTien": 45000000,
+    "soHoDaNop": 310,
+    "soHoChuaNop": 40,
+    "tongPhieuThu": 350
+  }
+]
+```
+
+### 6.10. Thống kê theo đợt thu cụ thể
+
+```http
+GET /api/thu-phi/ke-toan/dot-thu/:kyThu/thong-ke?nam=2025
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+```json
+{
+  "tongTien": 50000000,
+  "soPhieuThu": 320,
+  "soHoDaNop": 320
+}
+```
+
+### 6.11. Chi tiết các hộ đã nộp trong đợt thu
+
+```http
+GET /api/thu-phi/ke-toan/dot-thu/:kyThu/da-nop?nam=2025
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+```json
+[
+  {
+    "_id": "64a...",
+    "maPhieuThu": "PT-2025-001",
+    "tenChuHo": "Nguyễn Văn A",
+    "diaChi": "Căn hộ A-1201",
+    "tongTien": 150000,
+    "chiTietThu": [
+      {
+        "khoanThuId": "64a...",
+        "tenKhoanThu": "Phí vệ sinh tháng 1/2025",
+        "soTien": 24000
+      },
+      {
+        "khoanThuId": "64a...",
+        "tenKhoanThu": "Phí dịch vụ tháng 1/2025",
+        "soTien": 126000
+      }
+    ],
+    "ngayThu": "2025-01-15",
+    "trangThai": "Đã thu"
+  }
+]
+```
+
+### 6.12. Chi tiết các hộ chưa nộp trong đợt thu
+
+```http
+GET /api/thu-phi/ke-toan/dot-thu/:kyThu/chua-nop?nam=2025
+Authorization: Bearer <token>
+```
+
+### 6.13. Lịch sử nộp tiền của một hộ khẩu
+
+```http
+GET /api/thu-phi/ke-toan/ho-khau/:hoKhauId/lich-su?nam=2025
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+```json
+{
+  "hoKhauId": "64a...",
+  "tongKet": {
+    "daNop": 1500000,
+    "conNo": 150000
+  },
+  "danhSachPhieuThu": [
+    {
+      "_id": "64a...",
+      "maPhieuThu": "PT-2025-001",
+      "tongTien": 150000,
+      "trangThai": "Đã thu",
+      "ngayThu": "2025-01-15",
+      "chiTietThu": [...]
+    }
+  ]
+}
+```
+
 ---
 
 ## 7. Users APIs (Quản lý người dùng)

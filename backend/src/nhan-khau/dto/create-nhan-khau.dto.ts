@@ -28,7 +28,7 @@ export class CreateNhanKhauDto {
   @IsString()
   hoTen: string;
 
-  @IsNotEmpty({ message: 'Bí danh không được để trống' })
+  @IsOptional()
   @IsString()
   biDanh: string;
 
@@ -93,7 +93,7 @@ export class CreateNhanKhauDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['Thường trú', 'Tạm trú', 'Tạm vắng', 'Đã chuyển đi'], {
+  @IsIn(['Thường trú', 'Tạm trú', 'Tạm vắng', 'Đã chuyển đi', 'Đã Xóa'], {
     message:
       'Trạng thái phải là: Thường trú, Tạm trú, Tạm vắng, hoặc Đã chuyển đi',
   })

@@ -65,9 +65,7 @@ export class GhiChu {
 
 export class CreateHoKhauDto {
   @IsNotEmpty({ message: 'Thông tin chủ hộ không được để trống' })
-  @ValidateNested()
-  @Type(() => ChuHoDto)
-  chuHo: ChuHoDto;
+  chuHo: string;
 
   @IsNotEmpty({ message: 'Địa chỉ không được để trống' })
   @ValidateNested()
