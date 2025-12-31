@@ -617,7 +617,7 @@ export class HoKhauService {
         nhanKhauIds.push(
           hoKhau.chuHo instanceof Types.ObjectId
             ? hoKhau.chuHo
-            : new Types.ObjectId(hoKhau.chuHo.toString()),
+            : new Types.ObjectId((hoKhau.chuHo as any)._id),
         );
       }
 
@@ -627,7 +627,7 @@ export class HoKhauService {
             nhanKhauIds.push(
               tv.nhanKhauId instanceof Types.ObjectId
                 ? tv.nhanKhauId
-                : new Types.ObjectId(tv.nhanKhauId.toString()),
+                : new Types.ObjectId((tv.nhanKhauId as any).toString()),
             );
           }
         }
