@@ -8,7 +8,8 @@ import {
     getAllThuPhi,
     updatePhieuThu,
     deleteKhoanThu,
-    getKhoanThuTuNguyen
+    getKhoanThuTuNguyen,
+    deletePhieuThu // 🟢 1. IMPORT THÊM HÀM NÀY
 } from "../api";
 import {
     Heart,
@@ -163,20 +164,43 @@ export default function QuanLyDongGop() {
         }
     });
 
+    // 🟢 2. SỬA LẠI LOGIC XÓA CHIẾN DỊCH
     const deleteCampaignMutation = useMutation({
-        mutationFn: async (id: string) => await deleteKhoanThu(id),
+        mutationFn: async (id: string) => {
+            // Bước 1: Tìm chiến dịch trong danh sách campaigns (đã được tính toán ở useMemo)
+            const targetCamp = campaigns.find((c: any) => (c._id || c.id) === id);
+
+            // Bước 2: Nếu chiến dịch có các phiếu đóng góp (donations), xóa chúng trước
+            if (targetCamp && targetCamp.donations.length > 0) {
+                // Tạo một mảng các Promise để xóa từng phiếu thu
+                const deletePromises = targetCamp.donations.map((d: any) =>
+                    deletePhieuThu(d._id || d.id)
+                );
+                // Chờ tất cả phiếu thu bị xóa hết
+                await Promise.all(deletePromises);
+            }
+
+            // Bước 3: Sau khi xóa sạch dữ liệu liên quan, xóa chiến dịch (khoản thu)
+            return await deleteKhoanThu(id);
+        },
         onSuccess: () => {
-            toast.success("Đã xóa chiến dịch thành công!");
+            toast.success("Đã xóa chiến dịch và toàn bộ dữ liệu liên quan!");
+            // Refresh lại cả 2 luồng dữ liệu
             queryClient.invalidateQueries({ queryKey: ["khoan-thu-tu-nguyen"] });
+            queryClient.invalidateQueries({ queryKey: ["thu-phi-history"] });
+        },
+        onError: (err: any) => {
+            toast.error("Lỗi khi xóa: " + (err.message || "Không xác định"));
         }
     });
 
     // 4. HANDLERS
     const handleDeleteCampaign = (id: string, hasDonations: boolean) => {
-        toast(hasDonations ? "Chiến dịch này đã có dữ liệu đóng góp. Vẫn xóa?" : "Xác nhận xóa chiến dịch?", {
-            description: "Mọi phiếu thu liên quan sẽ không còn được thống kê vào chiến dịch này.",
-            action: { label: "Xóa", onClick: () => deleteCampaignMutation.mutate(id) },
+        toast(hasDonations ? "Chiến dịch này đang có dữ liệu. Xóa sẽ mất hết lịch sử đóng góp!" : "Xác nhận xóa chiến dịch?", {
+            description: "Hành động này không thể hoàn tác.",
+            action: { label: "Xóa tất cả", onClick: () => deleteCampaignMutation.mutate(id) },
             cancel: { label: "Hủy", onClick: () => { } },
+            duration: 5000
         });
     };
 
