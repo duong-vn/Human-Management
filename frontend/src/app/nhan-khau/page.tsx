@@ -8,7 +8,8 @@ import {
   getAllNhanKhau,
   updateNhanKhau,
   getAllHoKhau,
-  createMoiSinh
+  createMoiSinh,
+  getThongKeNhanKhau // 👈 IMPORT HÀM MỚI
 } from "./api";
 import { NhanKhau } from "./types";
 import { toast } from "sonner";
@@ -54,11 +55,22 @@ export default function NhanKhauPage() {
   });
 
   // --- DATA FETCHING ---
-  const { data: list = [], isLoading } = useQuery({
+
+  // 1. Lấy danh sách nhân khẩu (cho bảng)
+  const { data: list = [], isLoading: isLoadingList } = useQuery({
     queryKey: ["nhan-khau"],
     queryFn: getAllNhanKhau,
   });
 
+  // 2. 🟢 Lấy dữ liệu THỐNG KÊ từ API (thay vì tự tính)
+  const { data: statsData, isLoading: isLoadingStats } = useQuery({
+    queryKey: ["nhan-khau-stats"],
+    queryFn: getThongKeNhanKhau,
+    // Giá trị mặc định để không bị lỗi undefined khi đang tải
+    initialData: { total: 0, male: 0, female: 0, avgAge: 0 }
+  });
+
+  // 3. Lấy danh sách hộ khẩu (cho dropdown modal mới sinh)
   const { data: listHoKhau = [] } = useQuery({
     queryKey: ["ho-khau"],
     queryFn: async () => {
@@ -73,6 +85,7 @@ export default function NhanKhauPage() {
     mutationFn: (newNhanKhau: any) => createNhanKhau(newNhanKhau),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nhan-khau"] });
+      queryClient.invalidateQueries({ queryKey: ["nhan-khau-stats"] }); // Reload lại thống kê
       toast.success("Thêm nhân khẩu thành công!");
       setIsModalOpen(false);
     },
@@ -82,6 +95,7 @@ export default function NhanKhauPage() {
     mutationFn: (data: any) => createMoiSinh(data),
     onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["nhan-khau"] });
+        queryClient.invalidateQueries({ queryKey: ["nhan-khau-stats"] });
         toast.success("Đã thêm trẻ mới sinh thành công!");
         setIsMoiSinhModalOpen(false);
         setMoiSinhForm({ hoTen: "", ngaySinh: "", gioiTinh: "Nam", hoKhauId: "", quanHeVoiChuHo: "Con", noiSinh: "", queQuan: "" });
@@ -92,17 +106,18 @@ export default function NhanKhauPage() {
     mutationFn: ({ id, data }: { id: string; data: any }) => updateNhanKhau(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nhan-khau"] });
+      queryClient.invalidateQueries({ queryKey: ["nhan-khau-stats"] });
       setIsModalOpen(false);
       setEditingItem(null);
       toast.success("Cập nhật thành công!");
     },
   });
 
-  // Mutation xử lý Khai tử
   const deathMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => updateNhanKhau(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nhan-khau"] });
+      queryClient.invalidateQueries({ queryKey: ["nhan-khau-stats"] }); // Cập nhật lại số lượng/tuổi
       setIsDeathModalOpen(false);
       setDeathItem(null);
       toast.success("Đã ghi nhận khai tử thành công!");
@@ -116,6 +131,7 @@ export default function NhanKhauPage() {
     mutationFn: deleteNhanKhau,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["nhan-khau"] });
+      queryClient.invalidateQueries({ queryKey: ["nhan-khau-stats"] });
       toast.success("Đã xoá thành công!");
       setDeleteId(null);
     },
@@ -136,23 +152,19 @@ export default function NhanKhauPage() {
     setIsDeathModalOpen(true);
   };
 
-  // 🟢 FIX: Logic gửi dữ liệu Khai tử chuẩn theo Schema Backend
   const handleSubmitDeath = () => {
     if (!deathItem) return;
     if (!deathForm.ngayMat) return toast.error("Vui lòng chọn ngày mất");
 
     const id = deathItem._id || deathItem.id;
 
-    // Tạo chuỗi ghi chú về việc qua đời
     const deathNote = `[Qua đời] Mất ngày ${new Date(deathForm.ngayMat).toLocaleDateString("vi-VN")}. Lý do: ${deathForm.lyDo || "Không rõ"}.`;
-
-    // Nối vào ghi chú cũ (nếu có)
     const currentNote = deathItem.ghiChu || "";
     const finalGhiChu = currentNote ? `${currentNote}\n${deathNote}` : deathNote;
 
     const updateData = {
-      trangThai: "Đã qua đời", // Giá trị Enum hợp lệ trong Schema
-      ghiChu: finalGhiChu,     // Lưu thông tin chi tiết vào ghi chú
+      trangThai: "Đã qua đời",
+      ghiChu: finalGhiChu,
     };
 
     deathMutation.mutate({ id, data: updateData });
@@ -175,38 +187,10 @@ export default function NhanKhauPage() {
 
   const handleConfirmDelete = () => { if (deleteId) deleteMutation.mutate(deleteId); };
 
+  // --- BỘ LỌC CLIENT ---
   const safeList = useMemo(() => Array.isArray(list) ? list : [], [list]);
 
-  // --- THỐNG KÊ ---
-  const stats = useMemo(() => {
-    const total = safeList.length;
-    let male = 0; let female = 0; let totalAge = 0; let validAgeCount = 0;
-    const now = new Date();
-
-    safeList.forEach((item: any) => {
-        // Kiểm tra trạng thái để loại trừ người đã mất khỏi thống kê tuổi/giới tính (tuỳ nghiệp vụ)
-        const isDead = item.trangThai === "Đã qua đời";
-
-        if (!isDead) {
-            if (item.gioiTinh === "Nam") male++;
-            else if (item.gioiTinh === "Nữ") female++;
-
-            if (item.ngaySinh) {
-                const birthDate = new Date(item.ngaySinh);
-                if (!isNaN(birthDate.getTime())) {
-                    let age = now.getFullYear() - birthDate.getFullYear();
-                    const m = now.getMonth() - birthDate.getMonth();
-                    if (m < 0 || (m === 0 && now.getDate() < birthDate.getDate())) age--;
-                    totalAge += Math.max(0, age);
-                    validAgeCount++;
-                }
-            }
-        }
-    });
-    const avgAge = validAgeCount > 0 ? (totalAge / validAgeCount).toFixed(1) : 0;
-    return { total, male, female, avgAge };
-  }, [safeList]);
-
+  // 🟢 ĐÂY LÀ HÀM BẠN BỊ THIẾU, TÔI ĐÃ THÊM VÀO ĐÂY
   const checkIsMoiSinh = (ngaySinh: string) => {
       if (!ngaySinh) return false;
       const birth = new Date(ngaySinh);
@@ -237,7 +221,7 @@ export default function NhanKhauPage() {
     return matchName && matchID && matchYear && matchGender;
   });
 
-  if (isLoading) return <div className="flex justify-center items-center h-screen bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div></div>;
+  if (isLoadingList) return <div className="flex justify-center items-center h-screen bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div></div>;
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-8 font-sans text-gray-900">
@@ -248,23 +232,43 @@ export default function NhanKhauPage() {
         </div>
       </div>
 
-      {/* STATS CARDS */}
+      {/* STATS CARDS: SỬ DỤNG DỮ LIỆU TỪ API (statsData) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
               <div className="p-3 bg-blue-50 text-blue-600 rounded-full"><Users size={24} /></div>
-              <div><p className="text-xs text-gray-500 uppercase font-bold">Tổng số</p><p className="text-2xl font-bold text-gray-800">{stats.total}</p></div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-bold">Tổng số</p>
+                <p className="text-2xl font-bold text-gray-800">
+                   {isLoadingStats ? "..." : statsData?.total || 0}
+                </p>
+              </div>
           </div>
           <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
               <div className="p-3 bg-indigo-50 text-indigo-600 rounded-full"><User size={24} /></div>
-              <div><p className="text-xs text-gray-500 uppercase font-bold">Nam</p><p className="text-2xl font-bold text-indigo-900">{stats.male}</p></div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-bold">Nam</p>
+                <p className="text-2xl font-bold text-indigo-900">
+                    {isLoadingStats ? "..." : statsData?.male || 0}
+                </p>
+              </div>
           </div>
           <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
               <div className="p-3 bg-pink-50 text-pink-500 rounded-full"><User size={24} /></div>
-              <div><p className="text-xs text-gray-500 uppercase font-bold">Nữ</p><p className="text-2xl font-bold text-pink-700">{stats.female}</p></div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-bold">Nữ</p>
+                <p className="text-2xl font-bold text-pink-700">
+                     {isLoadingStats ? "..." : statsData?.female || 0}
+                </p>
+              </div>
           </div>
            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4">
               <div className="p-3 bg-green-50 text-green-600 rounded-full"><Calendar size={24} /></div>
-              <div><p className="text-xs text-gray-500 uppercase font-bold">Tuổi Trung Bình</p><p className="text-2xl font-bold text-green-800">{stats.avgAge}</p></div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase font-bold">Tuổi Trung Bình</p>
+                <p className="text-2xl font-bold text-green-800">
+                    {isLoadingStats ? "..." : statsData?.avgAge || 0}
+                </p>
+              </div>
           </div>
       </div>
 
@@ -325,7 +329,6 @@ export default function NhanKhauPage() {
                   const itemId = item._id || item.id;
                   const isBaby = checkIsMoiSinh(item.ngaySinh);
 
-                  // 🟢 LOGIC KIỂM TRA QUA ĐỜI
                   const isDead = item.trangThai === "Đã qua đời";
                   const statusText = item.trangThai && item.trangThai.trim() !== "" ? item.trangThai : "Chưa đăng ký";
 
@@ -335,7 +338,6 @@ export default function NhanKhauPage() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       onClick={() => setViewingItem(item)}
-                      // 🟢 Nếu đã qua đời -> làm mờ dòng
                       className={`hover:bg-blue-50/50 transition-colors group cursor-pointer ${isDead ? "bg-gray-100/50 grayscale opacity-80" : ""}`}
                     >
                       <td className="p-4 pl-6 font-mono text-sm text-gray-400">#{itemId?.toString().slice(-4).toUpperCase()}</td>
@@ -379,7 +381,6 @@ export default function NhanKhauPage() {
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                             <button onClick={() => handleOpenEdit(item)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Chỉnh sửa"><Edit size={16} /></button>
-                            {/* 🟢 Chỉ hiện nút Khai tử nếu CHƯA qua đời */}
                             {!isDead && (
                                 <button onClick={() => handleOpenDeath(item)} className="p-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-all" title="Khai tử">
                                     <Skull size={16} />
@@ -421,7 +422,6 @@ export default function NhanKhauPage() {
                   <div>
                     <h4 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                         {viewingItem.hoTen}
-                        {/* 🟢 Badge Đã mất */}
                         {viewingItem.trangThai === "Đã qua đời" &&
                             <span className="text-xs bg-black text-white px-2 py-0.5 rounded">Đã mất</span>
                         }

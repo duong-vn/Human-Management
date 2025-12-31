@@ -333,18 +333,64 @@ export class NhanKhauService {
     }
 
     return {
-      tuoiTrungBinh: Math.round(result[0].tuoiTrungBinh * 10) / 10, // Làm tròn 1 chữ số thập phân
+      tuoiTrungBinh: Math.round(result[0].tuoiTrungBinh * 10) / 10,
       soLuong: result[0].soLuong,
       tuoiNhoNhat: result[0].tuoiNhoNhat,
       tuoiLonNhat: result[0].tuoiLonNhat,
     };
   }
 
-  // Đếm nhân khẩu theo hộ khẩu (dùng cho thu phí)
+  // Đếm nhân khẩu theo hộ khẩu
   async demNhanKhauTheoHoKhau(hoKhauId: string): Promise<number> {
     return this.nhanKhauModel.countDocuments({
       hoKhauId: new Types.ObjectId(hoKhauId),
       trangThai: { $in: ['Thường trú', 'Tạm trú'] },
     });
+  }
+
+  // 🟢 HÀM MỚI ĐƯỢC THÊM VÀO ĐÂY (Nằm TRONG class, trước dấu ngoặc đóng cuối cùng)
+  async getThongKe() {
+    // Sửa điều kiện lọc: Chỉ lấy Thường trú và Tạm trú (bỏ Tạm vắng và Đã chuyển đi)
+    // Nếu bạn muốn tính cả Tạm vắng, hãy thêm 'Tạm vắng' vào mảng bên dưới
+    const allNhanKhau = await this.nhanKhauModel.find({
+      trangThai: { $in: ['Thường trú', 'Tạm trú'] },
+    });
+
+    const total = allNhanKhau.length;
+    let male = 0;
+    let female = 0;
+    let totalAge = 0;
+    let validAgeCount = 0;
+    const now = new Date();
+
+    allNhanKhau.forEach((p) => {
+      // Đếm giới tính
+      if (p.gioiTinh === 'Nam') male++;
+      else if (p.gioiTinh === 'Nữ') female++;
+
+      // Tính tuổi
+      if (p.ngaySinh) {
+        const birthDate = new Date(p.ngaySinh);
+        let age = now.getFullYear() - birthDate.getFullYear();
+        const m = now.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && now.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        if (age >= 0) {
+          totalAge += age;
+          validAgeCount++;
+        }
+      }
+    });
+
+    const avgAge =
+      validAgeCount > 0 ? (totalAge / validAgeCount).toFixed(1) : 0;
+
+    return {
+      total,
+      male,
+      female,
+      avgAge,
+    };
   }
 }

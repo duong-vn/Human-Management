@@ -274,4 +274,9 @@ export class NhanKhauController {
   remove(@Param('id') id: string) {
     return this.nhanKhauService.remove(id);
   }
+  @Get('thong-ke/chung')
+async getThongKe() {
+  return this.nhanKhauService.getThongKe();
 }
+}
+
