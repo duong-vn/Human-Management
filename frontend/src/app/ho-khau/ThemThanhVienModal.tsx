@@ -60,13 +60,12 @@ export default function ThemThanhVienModal({
     }
   }, [isOpen]);
 
-  // Lọc nhân khẩu: chưa có hộ khẩu hoặc chưa trong hộ này
+  // Lọc nhân khẩu: chưa có hộ khẩu và chưa trong hộ này
   const availableNhanKhau = nhanKhauList.filter((nk) => {
     // Không hiển thị những người đã trong hộ khẩu này
     if (currentThanhVienIds.includes(nk._id)) return false;
-    // Chỉ hiển thị người chưa có hộ khẩu (hoặc tất cả nếu muốn chuyển hộ)
-    // return !nk.hoKhauId; // Uncomment nếu chỉ muốn người chưa có hộ khẩu
-    return true;
+    // Chỉ hiển thị người chưa có hộ khẩu
+    return !nk.hoKhauId;
   });
 
   // Lọc theo search
@@ -241,11 +240,6 @@ export default function ThemThanhVienModal({
                             • {nk.gioiTinh || "---"}
                           </p>
                         </div>
-                        {nk.hoKhauId && (
-                          <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full flex-shrink-0 ml-2">
-                            Đã có HK
-                          </span>
-                        )}
                       </div>
                     </div>
                   ))}

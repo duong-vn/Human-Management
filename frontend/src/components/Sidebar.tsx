@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react"; // 1. Import useState
+import { useState, useEffect } from "react";
 import {
   HomeIcon,
   UsersIcon,
@@ -10,12 +10,11 @@ import {
   CurrencyDollarIcon,
   DocumentTextIcon,
   ChartBarIcon,
-  ChevronDownIcon, // 2. Import icon mũi tên
+  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
+import { getUser, subscribeAuth, User } from "@/lib/AuthToken";
 
-// ... (Các import giữ nguyên)
-
-// 3. Cấu trúc menu hỗ trợ submenu (ĐÃ SỬA: XÓA MỤC TRÙNG)
+// Cấu trúc menu hỗ trợ submenu
 const menuItems = [
   {
     title: "Trang chủ",
@@ -41,7 +40,6 @@ const menuItems = [
     href: "/nhan-khau",
     icon: UsersIcon,
   },
-  // --- CHỈ GIỮ LẠI 1 MỤC NÀY THÔI ---
   {
     title: "Quản lý thu phí",
     href: "/thu-phi",
@@ -52,12 +50,7 @@ const menuItems = [
       { title: "Đóng góp / Ủng hộ", href: "/thu-phi/dong-gop" },
     ],
   },
-  // ----------------------------------
-  {
-    title: "Quản lý phiếu thu",
-    href: "/phieu-thu",
-    icon: DocumentTextIcon,
-  },
+
   {
     title: "Tạm trú tạm vắng",
     href: "/tam-tru-tam-vang",
@@ -72,8 +65,21 @@ const menuItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  // State lưu danh sách menu đang mở (lưu theo href của cha)
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [user, setUser] = useState<User>(getUser());
+
+  // Theo dõi trạng thái auth
+  useEffect(() => {
+    const sync = () => {
+      const nextUser = getUser();
+      setUser((prev) => (prev === nextUser ? prev : nextUser));
+    };
+    sync();
+    const unsubscribe = subscribeAuth(sync);
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   // Tự động mở menu cha nếu đang đứng ở trang con (khi reload trang)
   useEffect(() => {
@@ -89,13 +95,14 @@ export default function Sidebar() {
   // Hàm toggle đóng mở
   const handleToggle = (href: string) => {
     if (openMenu === href) {
-      setOpenMenu(null); // Đóng nếu đang mở
+      setOpenMenu(null);
     } else {
-      setOpenMenu(href); // Mở menu mới
+      setOpenMenu(href);
     }
   };
 
-  if (pathname?.startsWith("/auth")) {
+  // Ẩn sidebar khi ở trang auth hoặc chưa đăng nhập
+  if (pathname?.startsWith("/auth") || !user) {
     return null;
   }
 

@@ -14,6 +14,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { getAllHoKhau } from "../api";
+import type { HoKhau } from "../types";
 
 export default function ThongKeHoKhauPage() {
   const { data: hoKhauList = [], isLoading } = useQuery({
@@ -88,7 +89,7 @@ export default function ThongKeHoKhauPage() {
     };
   }, [hoKhauList]);
 
-  const getChuHoName = (chuHo: any) => {
+  const getChuHoName = (chuHo: HoKhau["chuHo"] | undefined) => {
     if (!chuHo) return "---";
     if (typeof chuHo === "string") return "---";
     return chuHo.hoTen || "---";
@@ -253,7 +254,11 @@ export default function ThongKeHoKhauPage() {
                 Hộ có nhiều thành viên nhất
               </p>
               <p className="font-semibold text-gray-800">
-                {getChuHoName(stats.hoNhieuThanhVienNhat?.chuHo)}
+                {getChuHoName(
+                  "chuHo" in stats.hoNhieuThanhVienNhat
+                    ? stats.hoNhieuThanhVienNhat.chuHo
+                    : undefined
+                )}
               </p>
               <p className="text-sm text-green-600 mt-1">
                 {stats.hoNhieuThanhVienNhat?.thanhVien?.length || 0} thành viên
@@ -264,7 +269,11 @@ export default function ThongKeHoKhauPage() {
                 Hộ có ít thành viên nhất
               </p>
               <p className="font-semibold text-gray-800">
-                {getChuHoName(stats.hoItThanhVienNhat?.chuHo)}
+                {getChuHoName(
+                  "chuHo" in stats.hoItThanhVienNhat
+                    ? stats.hoItThanhVienNhat.chuHo
+                    : undefined
+                )}
               </p>
               <p className="text-sm text-orange-600 mt-1">
                 {stats.hoItThanhVienNhat?.thanhVien?.length || 0} thành viên

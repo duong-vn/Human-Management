@@ -49,3 +49,13 @@ export const createMoiSinh = async (data: {
     const res = await api.post("/nhan-khau/moi-sinh", data);
     return res.data;
 };
+
+// api.ts
+// ... các imports cũ
+
+export const getThongKeNhanKhau = async () => {
+  // Giả sử axios instance của bạn tên là 'http' hoặc 'axiosClient'
+  const res = await api.get('/nhan-khau/thong-ke/chung');
+  return res.data;
+  // Hoặc nếu trả về mảng/object trực tiếp: return res;
+};

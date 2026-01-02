@@ -6,23 +6,13 @@ import {
   getKhoanThuBatBuoc,
   getKhoanThuTuNguyen,
   deletePhieuThu,
-  createKhoanThu
+  createKhoanThu,
+  updatePhieuThu // 🟢 1. IMPORT HÀM NÀY (Bạn cần đảm bảo file api.js có hàm này)
 } from "./api";
 import {
-  Search,
-  Filter,
-  User,
-  CheckCircle,
-  Clock,
-  Wallet,
-  Heart,
-  TrendingUp,
-  Eye,
-  X,
-  Trash2,
-  Plus,
-  Calendar,
-  AlertTriangle
+  Search, Filter, User, CheckCircle, Clock, Wallet, Heart,
+  TrendingUp, Eye, X, Trash2, Plus, Calendar, AlertTriangle,
+  Banknote // 🟢 Thêm icon tiền
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -30,7 +20,6 @@ import { toast } from "sonner";
 export default function QuanLyThuPhi() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterMonth, setFilterMonth] = useState("");
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [addType, setAddType] = useState<"Bắt buộc" | "Tự nguyện">("Bắt buộc");
@@ -102,6 +91,17 @@ export default function QuanLyThuPhi() {
     }
   });
 
+  // 🟢 2. THÊM MUTATION CẬP NHẬT TRẠNG THÁI (Thu nợ)
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, payload }: { id: string, payload: any }) => await updatePhieuThu(id, payload),
+    onSuccess: () => {
+        toast.success("Đã thu tiền thành công!");
+        // Khi invalidate, dữ liệu mới sẽ tải lại, trạng thái chuyển thành "Đã thu" -> Tự động trừ nợ
+        queryClient.invalidateQueries({ queryKey: ["thu-phi-history"] });
+    },
+    onError: (err: any) => toast.error("Lỗi cập nhật: " + (err.message || "Lỗi"))
+  });
+
   // 3. HANDLERS
   const handleDeletePhieu = (phieu: any) => {
       const id = phieu._id || phieu.id;
@@ -111,11 +111,21 @@ export default function QuanLyThuPhi() {
               label: "Xóa ngay",
               onClick: () => deleteMutation.mutate(id)
           },
-          cancel: {
-              label: "Hủy",
-              onClick: () => {}
-          },
+          cancel: { label: "Hủy", onClick: () => {} },
           duration: 5000
+      });
+  };
+
+  // 🟢 3. HÀM XỬ LÝ THU NỢ
+  const handleThuNo = (phieu: any) => {
+      const id = phieu._id || phieu.id;
+      // Gọi API cập nhật trạng thái thành "Đã thu"
+      updateStatusMutation.mutate({
+          id,
+          payload: {
+            trangThai: "Đã thu",
+            ngayThu: new Date().toISOString() // Cập nhật ngày thu thực tế
+          }
       });
   };
 
@@ -136,7 +146,7 @@ export default function QuanLyThuPhi() {
     });
   };
 
-  // 4. LOGIC THỐNG KÊ (Đã sửa để bóc tách chi tiết từng khoản trong phiếu gộp)
+  // 4. LOGIC THỐNG KÊ
   const stats = useMemo(() => {
     let totalBatBuoc = 0;
     let totalTuNguyen = 0;
@@ -161,7 +171,7 @@ export default function QuanLyThuPhi() {
                 ghiChu: detail.ghiChu
             };
 
-            // Phân loại theo trạng thái của phiếu tổng
+            // Phân loại dựa trên trạng thái phiếu
             if (pt.trangThai === "Đã thu") {
                 if (batBuocIds.has(kId)) {
                     totalBatBuoc += amount;
@@ -169,6 +179,10 @@ export default function QuanLyThuPhi() {
                 } else if (tuNguyenIds.has(kId)) {
                     totalTuNguyen += amount;
                     listDetailTuNguyen.push(detailItem);
+                } else {
+                    // Trường hợp khoản thu khác hoặc fallback
+                    totalBatBuoc += amount;
+                    listDetailBatBuoc.push(detailItem);
                 }
             } else if (pt.trangThai === "Chưa thu") {
                 totalDangNo += amount;
@@ -237,6 +251,7 @@ export default function QuanLyThuPhi() {
 
       {/* STATS CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Card Bắt Buộc */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden group">
               <div className="flex justify-between items-start z-10">
                   <div>
@@ -250,6 +265,7 @@ export default function QuanLyThuPhi() {
               </div>
           </div>
 
+          {/* Card Tự Nguyện */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden group">
               <div className="flex justify-between items-start z-10">
                   <div>
@@ -263,6 +279,7 @@ export default function QuanLyThuPhi() {
               </div>
           </div>
 
+          {/* Card Nợ */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between relative overflow-hidden group">
               <div className="flex justify-between items-start z-10">
                   <div>
@@ -335,7 +352,20 @@ export default function QuanLyThuPhi() {
                             )}
                         </td>
                         <td className="p-4 text-center">
-                            <button onClick={() => handleDeletePhieu(item)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all opacity-0 group-hover:opacity-100" title="Xóa phiếu thu này"><Trash2 size={16} /></button>
+                            <div className="flex items-center justify-center gap-2">
+                                {/* 🟢 Nút Thu Tiền chỉ hiện khi Chưa Thu */}
+                                {item.trangThai === "Chưa thu" && (
+                                    <button
+                                        onClick={() => handleThuNo(item)}
+                                        className="p-2 text-green-600 bg-green-50 hover:bg-green-100 rounded-full transition-all"
+                                        title="Xác nhận thu tiền phiếu này"
+                                    >
+                                        <Banknote size={16} />
+                                    </button>
+                                )}
+
+                                <button onClick={() => handleDeletePhieu(item)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all" title="Xóa phiếu thu này"><Trash2 size={16} /></button>
+                            </div>
                         </td>
                     </tr>
                 ))}
@@ -344,7 +374,7 @@ export default function QuanLyThuPhi() {
         </div>
       </div>
 
-      {/* MODAL THÊM KHOẢN THU */}
+      {/* ... (Phần Modals giữ nguyên như cũ) ... */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6">
@@ -378,7 +408,6 @@ export default function QuanLyThuPhi() {
         </div>
       )}
 
-      {/* DETAIL MODAL */}
       {detailModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">

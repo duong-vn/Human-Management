@@ -93,9 +93,9 @@ export class CreateNhanKhauDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['Thường trú', 'Tạm trú', 'Tạm vắng', 'Đã chuyển đi', 'Đã Xóa'], {
+  @IsIn(['Thường trú', 'Tạm trú', 'Tạm vắng', 'Đã chuyển đi', 'Đã Xóa', 'Đã qua đời'], {
     message:
-      'Trạng thái phải là: Thường trú, Tạm trú, Tạm vắng, hoặc Đã chuyển đi',
+      'Trạng thái phải là: Thường trú, Tạm trú, Tạm vắng, Đã qua đời, hoặc Đã chuyển đi',
   })
   trangThai?: string;
 

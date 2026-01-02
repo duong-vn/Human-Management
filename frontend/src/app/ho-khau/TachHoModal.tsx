@@ -325,7 +325,7 @@ export default function TachHoModal({
                 ⚠️ Chọn chủ hộ mới cho hộ gốc
               </h3>
               <p className="text-xs text-yellow-700 mb-3">
-                Chủ hộ hiện tại ({hoKhau.chuHo.hoTen}) nằm trong danh sách tách.
+                Chủ hộ hiện tại ({getChuHoInfo(hoKhau.chuHo)?.hoTen || "N/A"}) nằm trong danh sách tách.
                 Vui lòng chọn chủ hộ mới cho hộ khẩu gốc từ những người còn lại.
               </p>
               <select

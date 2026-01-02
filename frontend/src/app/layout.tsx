@@ -17,9 +17,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BlueMoon | Quản Lý Chung Cư",
+  title: "TDP7 La Khê | Quản lý Tổ dân phố",
   description:
-    "Hệ thống quản lý hộ khẩu, nhân khẩu và thu phí chung cư BlueMoon",
+    "Hệ thống quản lý hộ khẩu, nhân khẩu và thu phí - Tổ dân phố 7 Phường La Khê",
 };
 
 export default function RootLayout({
