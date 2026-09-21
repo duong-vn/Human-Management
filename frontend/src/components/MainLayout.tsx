@@ -40,7 +40,7 @@ export default function MainLayout({
           id="main-content"
           tabIndex={-1}
           className={`app-main min-w-0 flex-1 ${
-            showSidebar ? "md:ml-[var(--sidebar-width)] pt-[var(--header-height)]" : !isAuthPage ? "pt-[var(--header-height)]" : ""
+            showSidebar ? "md:ml-[var(--sidebar-width)] pt-14 md:pt-0" : !isAuthPage ? "pt-[var(--header-height)]" : ""
           }`}
         >
           <div className={showSidebar ? "mx-auto w-full min-w-0 p-4 sm:p-6 lg:px-8 lg:py-7" : "w-full"}>

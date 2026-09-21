@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import { LayoutDashboard, Users, Building2, CreditCard, FileCheck, BarChart3, ShieldCheck, ChevronDown, X } from "lucide-react";
-import { getUser, subscribeAuth, User } from "@/lib/AuthToken";
+import { LayoutDashboard, Users, Building2, CreditCard, FileCheck, BarChart3, ShieldCheck, ChevronDown, X, LogOut } from "lucide-react";
+import { toast } from "sonner";
+import { clearUser, getUser, setAT, subscribeAuth, User } from "@/lib/AuthToken";
+import api from "@/lib/axios";
 import { useSidebar } from "./SidebarContext";
 
 interface MenuItem {
@@ -35,10 +37,26 @@ const menuItems: MenuItem[] = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [user, setUser] = useState<User>(getUser());
   const { isOpen: isMobileOpen, close: closeMobile } = useSidebar();
   const drawerRef = useRef<HTMLDialogElement>(null);
+
+  const handleLogout = async () => {
+    closeMobile();
+    clearUser();
+    setAT(null);
+    setUser(null);
+    try {
+      const res = await api.post("/auth/logout");
+      if (res.status === 201) toast.success("Đăng xuất thành công!");
+      else toast.error("Đăng xuất thất bại!");
+    } catch {
+      toast.error("Đăng xuất thất bại!");
+    }
+    router.push("/");
+  };
 
   useEffect(() => {
     const sync = () => setUser(getUser());
@@ -107,9 +125,36 @@ export default function Sidebar() {
           })}
         </ul>
       </nav>
-      <div className="mx-4 mb-4 rounded-lg border border-white/10 bg-white/[0.03] p-3">
-        <p className="text-xs font-semibold text-slate-200">Quản lý dân cư</p>
-        <p className="mt-1 text-[11px] leading-relaxed text-slate-400">Không gian nghiệp vụ dành cho cán bộ tổ dân phố.</p>
+      <div className="mt-auto border-t border-white/10 p-3">
+        <div className="flex items-center gap-2.5 rounded-lg bg-white/5 p-2">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+            {user.username?.charAt(0).toUpperCase() || "U"}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-xs font-bold text-white">{user.username}</p>
+            <p className="truncate text-[11px] text-slate-400">{user.role === "admin" ? "Quản trị viên" : "Cán bộ"}</p>
+          </div>
+          {user.role === "admin" && (
+            <Link
+              href="/user"
+              onClick={closeMobile}
+              className="rounded p-1 text-slate-400 hover:bg-white/10 hover:text-white"
+              title="Quản trị cán bộ"
+              aria-label="Quản trị cán bộ"
+            >
+              <ShieldCheck className="h-4 w-4" />
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="rounded p-1 text-slate-400 hover:bg-rose-500/20 hover:text-rose-400"
+            title="Đăng xuất"
+            aria-label="Đăng xuất"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </div>
   );
