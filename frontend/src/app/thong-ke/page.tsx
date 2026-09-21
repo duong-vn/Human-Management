@@ -1074,7 +1074,7 @@ export default function ThongKePage() {
                     <span>Danh Sách Phiếu Thu ({lichSuHo?.danhSachPhieuThu?.length ?? 0})</span>
                   </h4>
                   <span className="text-[11px] text-slate-400">
-                    Bấm "Chi tiết" để xem các khoản cấu thành phiếu
+                    Bấm &quot;Chi tiết&quot; để xem các khoản cấu thành phiếu
                   </span>
                 </div>
 

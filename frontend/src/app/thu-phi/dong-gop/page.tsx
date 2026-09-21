@@ -485,7 +485,7 @@ export default function QuanLyDongGopPage() {
               Chưa có chiến dịch vận động nào được tạo
             </p>
             <p className="text-xs text-slate-400 mt-1">
-              Hãy bấm "Tạo chiến dịch mới" để phát động cuộc vận động ủng hộ
+              Hãy bấm &quot;Tạo chiến dịch mới&quot; để phát động cuộc vận động ủng hộ
             </p>
           </Card>
         ) : (

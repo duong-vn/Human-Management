@@ -1,5 +1,9 @@
-import { CreateThuPhiPayload } from "./types";
 import api from "@/lib/axios";
+import type {
+  CreateKhoanThuPayload,
+  CreateThuPhiPayload,
+  UpdateThuPhiPayload,
+} from "./types";
 
 // --- QUẢN LÝ KHOẢN THU (DANH MỤC) ---
 
@@ -18,7 +22,7 @@ export const getKhoanThuTuNguyen = async () => {
   return res.data;
 };
 
-export const createKhoanThu = async (data: any) => {
+export const createKhoanThu = async (data: CreateKhoanThuPayload) => {
   // Đảm bảo data truyền vào đã có ngayBatDau (ISO String) và loaiKhoanThu
   const res = await api.post("/khoan-thu", data);
   return res.data;
@@ -44,12 +48,15 @@ export const getAllThuPhi = async () => {
 };
 
 // Thống nhất dùng createPhieuThu hoặc createThuPhi (nên dùng createPhieuThu cho đồng bộ giao diện)
-export const createPhieuThu = async (data: any) => {
+export const createPhieuThu = async (data: CreateThuPhiPayload) => {
   const res = await api.post("/thu-phi", data);
   return res.data;
 };
 
-export const updatePhieuThu = async (id: string, payload: any) => {
+export const updatePhieuThu = async (
+  id: string,
+  payload: UpdateThuPhiPayload
+) => {
   const res = await api.patch(`/thu-phi/${id}`, payload);
   return res.data;
 };

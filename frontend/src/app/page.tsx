@@ -13,7 +13,6 @@ import {
   BarChart3,
   ArrowRight,
   ShieldCheck,
-  CheckCircle2,
   UserPlus,
   Receipt,
   FileText,

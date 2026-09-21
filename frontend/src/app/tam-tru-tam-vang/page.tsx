@@ -113,8 +113,8 @@ export default function TamTruTamVangPage() {
   };
 
   // Filter and Search
-  const safeList = Array.isArray(list) ? list : [];
   const filteredList = useMemo(() => {
+    const safeList = Array.isArray(list) ? list : [];
     const term = searchTerm.toLowerCase().trim();
     return safeList.filter((item: TamTruTamVang) => {
       const matchSearch =
@@ -134,7 +134,7 @@ export default function TamTruTamVangPage() {
 
       return true;
     });
-  }, [safeList, searchTerm, filterLoai, filterTrangThai]);
+  }, [list, searchTerm, filterLoai, filterTrangThai]);
 
   const formatDiaChi = (diaChi?: DiaChi) => {
     if (!diaChi || typeof diaChi !== "object") return "---";

@@ -1,22 +1,36 @@
 export type ChiTietThu = {
   khoanThuId: string;
-  soTien: number; // Lưu ý: Backend cũng thường yêu cầu đây là number
+  tenKhoanThu?: string;
+  soTien: number;
   ghiChu?: string;
 };
 
+export type CreateKhoanThuPayload = {
+  tenKhoanThu: string;
+  loaiKhoanThu: string;
+  moTa?: string;
+  soTien?: number;
+  donViTinh?: string;
+  ngayBatDau: string;
+  ngayKetThuc?: string;
+  isActive?: boolean;
+  ghiChu?: string;
+  tenDotThu?: string;
+};
+
 export type CreateThuPhiPayload = {
+  maPhieuThu?: string;
   hoKhauId: string;
-
-  // --- BỔ SUNG DÒNG NÀY ---
-  soNhanKhau: number;
-  // ------------------------
-
-  // Nếu backend cần lưu snapshot tên chủ hộ/địa chỉ tại thời điểm thu
-  // thì bạn có thể cần thêm cả 2 trường dưới (tùy backend yêu cầu hay không):
   tenChuHo?: string;
   diaChi?: string;
-
+  soNhanKhau?: number;
   chiTietThu: ChiTietThu[];
+  tongTien?: number;
+  ngayThu?: string;
+  ghiChu?: string;
+  trangThai?: string;
   nam: number;
   kyThu: string;
 };
+
+export type UpdateThuPhiPayload = Partial<CreateThuPhiPayload>;
