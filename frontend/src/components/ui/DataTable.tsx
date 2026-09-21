@@ -40,7 +40,7 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   return (
     <div className={`min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white ${className}`} aria-busy={isLoading}>
-      <div className="max-h-[70vh] overflow-auto overscroll-contain" tabIndex={0} role="region" aria-label="Bảng dữ liệu">
+      <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Bảng dữ liệu">
         <table className="w-full border-collapse text-left text-sm text-slate-700">
           <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-100 text-xs font-bold text-slate-600">
             <tr>{columns.map((column, index) => (
