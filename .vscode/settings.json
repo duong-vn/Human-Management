@@ -1,0 +1,11 @@
+{
+  // Run ESLint only when saving files (prevents constant red squiggles while typing).
+  "eslint.run": "onSave",
+  // Auto-fix ESLint (including prettier/prettier) on save.
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  // Keep whitespace tidy.
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true
+}
