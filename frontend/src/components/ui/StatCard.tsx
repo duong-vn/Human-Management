@@ -12,6 +12,7 @@ export interface StatCardProps {
   };
   accent?: "blue" | "emerald" | "amber" | "rose" | "purple" | "slate";
   className?: string;
+  variant?: "default" | "primary" | "compact";
 }
 
 export const StatCard: React.FC<StatCardProps> = ({
@@ -22,7 +23,96 @@ export const StatCard: React.FC<StatCardProps> = ({
   trend,
   accent = "blue",
   className = "",
+  variant = "default",
 }) => {
+  if (variant === "compact") {
+    return (
+      <div
+        className={`min-w-0 rounded-xl border border-slate-200 bg-white p-2.5 sm:p-3 shadow-xs transition-colors hover:border-slate-300 flex flex-col justify-between ${className}`}
+      >
+        <dl className="min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate">
+              {title}
+            </dt>
+            {icon && (
+              <div
+                aria-hidden="true"
+                className="h-6 w-6 shrink-0 text-slate-400 flex items-center justify-center"
+              >
+                {icon}
+              </div>
+            )}
+          </div>
+          <dd className="mt-1 text-lg sm:text-xl font-bold tracking-tight text-slate-900 tabular-nums break-words">
+            {value}
+          </dd>
+        </dl>
+
+        {(subtitle || trend) && (
+          <div className="mt-2 pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 text-[11px] text-slate-500">
+            {subtitle && <span className="truncate">{subtitle}</span>}
+            {trend && (
+              <span
+                className={`ml-auto font-medium ${
+                  trend.neutral
+                    ? "text-slate-500"
+                    : "text-slate-700 font-semibold"
+                }`}
+              >
+                {trend.value}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (variant === "primary") {
+    return (
+      <div
+        className={`min-w-0 rounded-xl border border-slate-200 bg-white shadow-xs transition-colors hover:border-slate-300 flex flex-col justify-between p-6 ${className}`}
+      >
+        <dl className="min-w-0">
+          <div className="flex items-start justify-between gap-3">
+            <dt className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
+              {title}
+            </dt>
+            {icon && (
+              <div
+                aria-hidden="true"
+                className="flex shrink-0 items-center justify-center rounded-lg text-slate-500 h-10 w-10 bg-slate-100"
+              >
+                {icon}
+              </div>
+            )}
+          </div>
+          <dd className="my-3 text-3xl sm:text-4xl break-words font-extrabold tracking-tight text-slate-900 tabular-nums">
+            {value}
+          </dd>
+        </dl>
+
+        {(subtitle || trend) && (
+          <div className="mt-4 pt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 text-slate-500 text-xs">
+            {subtitle && <span className="truncate">{subtitle}</span>}
+            {trend && (
+              <span
+                className={`ml-auto font-medium ${
+                  trend.neutral
+                    ? "text-slate-500"
+                    : "text-slate-700 font-semibold"
+                }`}
+              >
+                {trend.value}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const accentStyles: Record<string, { iconBg: string; iconColor: string; border: string }> = {
     blue: {
       iconBg: "bg-blue-50",

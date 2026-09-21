@@ -52,4 +52,21 @@ assert.match(confirmation, /role="alertdialog"/);
 assert.match(confirmation, /aria-labelledby="[^"]+"/);
 assert.match(confirmation, /Hủy bỏ/);
 assert.match(render(PageHeader, { title: 'Hộ khẩu', breadcrumbs: [{ label: 'Tổng quan', href: '/' }, { label: 'Hộ khẩu' }] }), /aria-label="Đường dẫn"/);
-console.log('Admin UI: real component rendering, table states, pagination, labels and dialog semantics passed.');
+const { StatCard } = component('StatCard');
+const statProps = { title: 'Tổng nhân khẩu', value: 0, icon: React.createElement('svg'), subtitle: 'Năm 2026', trend: { value: 'Đã thu', isPositive: true } };
+assert.equal(render(StatCard, statProps), render(StatCard, { ...statProps, variant: 'default' }), 'Existing StatCard callers must retain default output');
+for (const variant of ['primary', 'compact']) {
+  const stat = render(StatCard, { ...statProps, variant });
+  if (variant === 'compact') {
+    assert.match(stat, /rounded-xl/, 'StatCard compact must use rounded-xl for soft modern corners');
+  }
+  assert.match(stat, /<dt\b[^>]*>Tổng nhân khẩu<\/dt>/, 'Summary label must describe its value');
+  assert.match(stat, /<dd\b[^>]*>0<\/dd>/, 'Zero must not disappear');
+  assert.match(stat, /Năm 2026/);
+  assert.match(stat, /Đã thu/);
+  assert.doesNotMatch(stat, /(?:bg|text|border)-(?:blue|emerald|rose|purple|pink)-/, 'Quiet variants must not inherit bright accents');
+  assert.doesNotMatch(stat, /role="button"|tabindex=/, 'Read-only stats must not imply interaction');
+  assert.ok(render(StatCard, { title: 'Tổng thu', value: '999.999.999.999 ₫', variant }).includes('999.999.999.999 ₫'));
+  assert.ok(render(StatCard, { title: 'Đợt thu', value: 'Chưa chọn', variant }).includes('Chưa chọn'));
+}
+console.log('Admin UI: real component rendering, stat variants, table states, pagination, labels and dialog semantics passed.');
