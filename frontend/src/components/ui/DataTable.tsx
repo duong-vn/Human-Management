@@ -87,11 +87,11 @@ export function DataTable<T>({
           </tbody>
         </table>
       </div>
-      {pagination && pagination.totalPages > 1 && (
+      {pagination && (
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-4 py-3">
           <p className="text-xs text-slate-500">
             {pagination.totalItems !== undefined && <>Tổng số <strong className="tabular-nums text-slate-800">{pagination.totalItems}</strong> bản ghi · </>}
-            Trang <strong className="tabular-nums text-slate-800">{pagination.currentPage}</strong> / {pagination.totalPages}
+            Trang <strong className="tabular-nums text-slate-800">{pagination.currentPage}</strong> / {Math.max(1, pagination.totalPages)}
           </p>
           <div className="flex items-center gap-2">
             <Button variant="secondary" size="sm" onClick={() => pagination.onPageChange(pagination.currentPage - 1)} disabled={isLoading || pagination.currentPage <= 1} leftIcon={<ChevronLeft className="h-3.5 w-3.5" />}>Trước</Button>

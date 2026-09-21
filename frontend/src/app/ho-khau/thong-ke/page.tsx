@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useId } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import {
@@ -27,9 +27,13 @@ import {
   Button,
   Badge,
   Skeleton,
+  useStatsVisibility,
+  StatsToggle,
 } from "@/components/ui";
 
 export default function ThongKeHoKhauPage() {
+  const statsGridId = useId();
+  const { showStats, toggleStats } = useStatsVisibility("hide_stats_ho_khau_thong_ke");
   const {
     data: hoKhauList = [],
     isLoading,
@@ -126,7 +130,7 @@ export default function ThongKeHoKhauPage() {
   // Trạng thái đang tải (Loading)
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="page-stack">
         <PageHeader
           title="Thống Kê Quy Mô Hộ Khẩu"
           description="Đang tải và tổng hợp dữ liệu thống kê hộ tịch..."
@@ -152,7 +156,7 @@ export default function ThongKeHoKhauPage() {
   // Trạng thái lỗi (Error) - Không biến lỗi thành số 0
   if (isError) {
     return (
-      <div className="space-y-6">
+      <div className="page-stack">
         <PageHeader
           title="Thống Kê Quy Mô Hộ Khẩu"
           description="Báo cáo phân tích cơ cấu quy mô hộ gia đình trên địa bàn"
@@ -162,13 +166,15 @@ export default function ThongKeHoKhauPage() {
             { label: "Thống kê quy mô" },
           ]}
           actions={
-            <Link
-              href="/ho-khau"
-              className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 text-xs font-medium rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs hover:border-slate-300 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Về danh sách hộ khẩu</span>
-            </Link>
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
+              <Link
+                href="/ho-khau"
+                className="inline-flex items-center justify-center gap-1.5 h-8 px-3 text-xs font-medium rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs hover:border-slate-300 transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Về danh sách hộ khẩu</span>
+              </Link>
+            </div>
           }
         />
 
@@ -202,7 +208,7 @@ export default function ThongKeHoKhauPage() {
   // Trạng thái không có dữ liệu (Empty)
   if (hoKhauList.length === 0) {
     return (
-      <div className="space-y-6">
+      <div className="page-stack">
         <PageHeader
           title="Thống Kê Quy Mô Hộ Khẩu"
           description="Báo cáo phân tích cơ cấu quy mô hộ gia đình trên địa bàn"
@@ -212,13 +218,15 @@ export default function ThongKeHoKhauPage() {
             { label: "Thống kê quy mô" },
           ]}
           actions={
-            <Link
-              href="/ho-khau"
-              className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 text-xs font-medium rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs hover:border-slate-300 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Về danh sách hộ khẩu</span>
-            </Link>
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
+              <Link
+                href="/ho-khau"
+                className="inline-flex items-center justify-center gap-1.5 h-8 px-3 text-xs font-medium rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs hover:border-slate-300 transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Về danh sách hộ khẩu</span>
+              </Link>
+            </div>
           }
         />
 
@@ -252,7 +260,7 @@ export default function ThongKeHoKhauPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="page-stack">
       {/* Page Header */}
       <PageHeader
         title="Thống Kê Quy Mô Hộ Khẩu"
@@ -264,27 +272,39 @@ export default function ThongKeHoKhauPage() {
           { label: "Thống kê quy mô" },
         ]}
         actions={
-          <Link
-            href="/ho-khau"
-            className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 text-xs font-medium rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs hover:border-slate-300 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Về danh sách hộ khẩu</span>
-          </Link>
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <StatsToggle
+              expanded={showStats}
+              onToggle={toggleStats}
+              controls={statsGridId}
+            />
+            <Link
+              href="/ho-khau"
+              className="inline-flex items-center justify-center gap-1.5 h-8 px-3 text-xs font-medium rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs hover:border-slate-300 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Về danh sách hộ khẩu</span>
+            </Link>
+          </div>
         }
       />
 
-      {/* Row 1: Compact Civic StatCards (Restrained blue/slate palette, NO rainbow colors) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Row 1: Compact Civic StatCards */}
+      <div
+        id={statsGridId}
+        hidden={!showStats}
+        className={showStats ? "grid grid-cols-2 lg:grid-cols-4 gap-2.5" : "hidden"}
+      >
         <StatCard
+          variant="compact"
           title="TỔNG SỐ HỘ KHẨU"
           value={stats.tong}
           subtitle="Tổng sổ hộ từng lập trên địa bàn"
-          icon={<Building2 className="w-5 h-5" />}
-          accent="blue"
+          icon={<Building2 className="w-4 h-4" />}
         />
 
         <StatCard
+          variant="compact"
           title="HỘ ĐANG CƯ TRÚ"
           value={stats.dangHoatDong}
           subtitle={`${
@@ -292,8 +312,7 @@ export default function ThongKeHoKhauPage() {
               ? ((stats.dangHoatDong / stats.tong) * 100).toFixed(1)
               : "0"
           }% trên tổng số`}
-          icon={<CheckCircle className="w-5 h-5" />}
-          accent="blue"
+          icon={<CheckCircle className="w-4 h-4" />}
           trend={{
             value: "Hoạt động",
             neutral: true,
@@ -301,6 +320,7 @@ export default function ThongKeHoKhauPage() {
         />
 
         <StatCard
+          variant="compact"
           title="HỘ ĐÃ TÁCH"
           value={stats.daTachHo}
           subtitle={`${
@@ -308,8 +328,7 @@ export default function ThongKeHoKhauPage() {
               ? ((stats.daTachHo / stats.tong) * 100).toFixed(1)
               : "0"
           }% tổng hộ`}
-          icon={<AlertCircle className="w-5 h-5" />}
-          accent="slate"
+          icon={<AlertCircle className="w-4 h-4" />}
           trend={{
             value: "Biến động",
             neutral: true,
@@ -317,11 +336,11 @@ export default function ThongKeHoKhauPage() {
         />
 
         <StatCard
+          variant="compact"
           title="HỘ ĐÃ XÓA"
           value={stats.daXoa}
           subtitle="Chuyển đi hoặc đã giải tỏa"
-          icon={<XCircle className="w-5 h-5" />}
-          accent="slate"
+          icon={<XCircle className="w-4 h-4" />}
         />
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useId } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -19,6 +19,8 @@ import {
   FileText,
   AlertCircle,
   RotateCw,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   getAllThuPhi,
@@ -37,6 +39,8 @@ import {
   Modal,
   ConfirmDialog,
   Skeleton,
+  useStatsVisibility,
+  StatsToggle,
 } from "@/components/ui";
 
 interface PhieuThuItem {
@@ -89,6 +93,8 @@ function extractErrorMessage(err: unknown, fallback: string): string {
 
 export default function QuanLyThuPhiPage() {
   const queryClient = useQueryClient();
+  const statsGridId = useId();
+  const { showStats, toggleStats } = useStatsVisibility("hide_stats_thu_phi");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
 
@@ -341,23 +347,44 @@ export default function QuanLyThuPhiPage() {
     ).toUpperCase();
   };
 
-  const filteredData = dsPhieuThu.filter((item) => {
-    const term = searchTerm.toLowerCase();
-    const matchName = item.tenChuHo?.toLowerCase().includes(term);
-    const matchKy = item.kyThu?.toLowerCase().includes(term);
-    const matchMa = item.maPhieuThu?.toLowerCase().includes(term);
-    const matchSearch = term === "" || matchName || matchKy || matchMa;
+  const filteredData = useMemo(() => {
+    return dsPhieuThu.filter((item) => {
+      const term = searchTerm.toLowerCase();
+      const matchName = item.tenChuHo?.toLowerCase().includes(term);
+      const matchKy = item.kyThu?.toLowerCase().includes(term);
+      const matchMa = item.maPhieuThu?.toLowerCase().includes(term);
+      const matchSearch = term === "" || matchName || matchKy || matchMa;
 
-    const matchStatus =
-      statusFilter === "" || item.trangThai === statusFilter;
+      const matchStatus =
+        statusFilter === "" || item.trangThai === statusFilter;
 
-    return matchSearch && matchStatus;
-  });
+      return matchSearch && matchStatus;
+    });
+  }, [dsPhieuThu, searchTerm, statusFilter]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const pagedData = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredData.slice(start, start + PAGE_SIZE);
+  }, [filteredData, currentPage]);
 
   const isAnyError = isErrorBatBuoc || isErrorTuNguyen || isErrorPhieuThu;
 
   return (
-    <div className="space-y-6">
+    <div className="page-stack">
       {/* Page Header */}
       <PageHeader
         title="Quản Lý Thu Phí & Các Nguồn Quỹ"
@@ -367,14 +394,21 @@ export default function QuanLyThuPhiPage() {
           { label: "Quản lý thu phí" },
         ]}
         actions={
-          <Button
-            variant="primary"
-            size="md"
-            leftIcon={<Plus className="w-4 h-4" />}
-            onClick={() => handleOpenAdd("Bắt buộc")}
-          >
-            Tạo khoản thu mới
-          </Button>
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <StatsToggle
+              expanded={showStats}
+              onToggle={toggleStats}
+              controls={statsGridId}
+            />
+            <Button
+              variant="primary"
+              size="md"
+              leftIcon={<Plus className="w-4 h-4" />}
+              onClick={() => handleOpenAdd("Bắt buộc")}
+            >
+              Tạo khoản thu mới
+            </Button>
+          </div>
         }
       />
 
@@ -431,57 +465,67 @@ export default function QuanLyThuPhiPage() {
       )}
 
       {/* Financial Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div
+      <div
+        id={statsGridId}
+        hidden={!showStats}
+        className={showStats ? "grid grid-cols-1 sm:grid-cols-3 gap-2.5" : "hidden"}
+      >
+        <button
+          type="button"
           onClick={() => openModal("bat-buoc")}
-          className="cursor-pointer group"
+          aria-label="Xem chi tiết thu phí cố định"
+          className="text-left w-full min-w-0 cursor-pointer p-0 bg-transparent border-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
         >
           <StatCard
+            variant="compact"
             title="TỔNG THU PHÍ CỐ ĐỊNH"
             value={formatCurrency(stats.totalBatBuoc)}
             subtitle="Phí vệ sinh, an ninh (Click xem chi tiết)"
-            icon={<CreditCard className="w-5 h-5" />}
-            accent="blue"
+            icon={<CreditCard className="w-4 h-4" />}
             trend={{
               value: "Đã thu",
               isPositive: true,
             }}
           />
-        </div>
+        </button>
 
-        <div
+        <button
+          type="button"
           onClick={() => openModal("tu-nguyen")}
-          className="cursor-pointer group"
+          aria-label="Xem chi tiết tổng quỹ đóng góp"
+          className="text-left w-full min-w-0 cursor-pointer p-0 bg-transparent border-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
         >
           <StatCard
+            variant="compact"
             title="TỔNG QUỸ ĐÓNG GÓP"
             value={formatCurrency(stats.totalTuNguyen)}
             subtitle="Đền ơn đáp nghĩa, người nghèo (Click xem)"
-            icon={<Heart className="w-5 h-5" />}
-            accent="purple"
+            icon={<Heart className="w-4 h-4" />}
             trend={{
               value: "Tự nguyện",
               isPositive: true,
             }}
           />
-        </div>
+        </button>
 
-        <div
+        <button
+          type="button"
           onClick={() => openModal("dang-no")}
-          className="cursor-pointer group"
+          aria-label="Xem chi tiết tổng số tiền còn nợ"
+          className="text-left w-full min-w-0 cursor-pointer p-0 bg-transparent border-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
         >
           <StatCard
+            variant="compact"
             title="TỔNG SỐ TIỀN CÒN NỢ"
             value={formatCurrency(stats.totalDangNo)}
             subtitle="Các hộ chưa hoàn thành (Click xem)"
-            icon={<Coins className="w-5 h-5" />}
-            accent="amber"
+            icon={<Coins className="w-4 h-4" />}
             trend={{
               value: "Cần đôn đốc",
               isPositive: false,
             }}
           />
-        </div>
+        </button>
       </div>
 
       {/* Filter Toolbar */}
@@ -568,7 +612,7 @@ export default function QuanLyThuPhiPage() {
                   </td>
                 </tr>
               ) : (
-                filteredData.map((item, index) => {
+                pagedData.map((item, index) => {
                   const itemId = item._id || item.id || "";
                   const isPaid = item.trangThai === "Đã thu";
 
@@ -674,6 +718,34 @@ export default function QuanLyThuPhiPage() {
             </tbody>
           </table>
         </div>
+
+        {filteredData.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-4 py-3">
+            <p className="text-xs text-slate-500">
+              Tổng số <strong className="tabular-nums text-slate-800">{filteredData.length}</strong> bản ghi · Trang <strong className="tabular-nums text-slate-800">{currentPage}</strong> / {totalPages}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={isLoading || currentPage <= 1}
+                leftIcon={<ChevronLeft className="h-3.5 w-3.5" />}
+              >
+                Trước
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={isLoading || currentPage >= totalPages}
+                rightIcon={<ChevronRight className="h-3.5 w-3.5" />}
+              >
+                Sau
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal Thêm Khoản Thu */}

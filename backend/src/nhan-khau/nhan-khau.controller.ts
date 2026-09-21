@@ -190,6 +190,12 @@ export class NhanKhauController {
     return this.nhanKhauService.search(keyword);
   }
 
+  @Get('thong-ke/chung')
+  @ApiOperation({ summary: 'Thống kê chung nhân khẩu' })
+  getThongKe() {
+    return this.nhanKhauService.getThongKe();
+  }
+
   @Get('thong-ke/gioi-tinh')
   @ApiOperation({ summary: 'Thống kê nhân khẩu theo giới tính' })
   thongKeTheoGioiTinh() {
@@ -274,9 +280,5 @@ export class NhanKhauController {
   remove(@Param('id') id: string) {
     return this.nhanKhauService.remove(id);
   }
-  @Get('thong-ke/chung')
-async getThongKe() {
-  return this.nhanKhauService.getThongKe();
-}
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useId } from "react";
 import { toast } from "sonner";
 import { isAxiosError } from "axios";
 import {
@@ -34,6 +34,8 @@ import {
   StatCard,
   Modal,
   Skeleton,
+  useStatsVisibility,
+  StatsToggle,
 } from "@/components/ui";
 
 interface DotThuItem {
@@ -101,6 +103,8 @@ function extractErrorMessage(err: unknown, fallback: string): string {
 }
 
 export default function ThongKePage() {
+  const statsGridId = useId();
+  const { showStats, toggleStats } = useStatsVisibility("hide_stats_thong_ke");
   const [nam, setNam] = useState<number>(new Date().getFullYear());
   const [dotThu, setDotThu] = useState<DotThuItem[]>([]);
   const [dotFilterText, setDotFilterText] = useState<string>("");
@@ -360,8 +364,69 @@ export default function ThongKePage() {
     };
   }, [dotThu]);
 
+  const [daNopPage, setDaNopPage] = useState(1);
+  const [chuaNopPage, setChuaNopPage] = useState(1);
+  const DETAIL_PAGE_SIZE = 10;
+
+  useEffect(() => {
+    setDaNopPage(1);
+    setChuaNopPage(1);
+  }, [selectedDot, chiTietFilterText, chiTietFeeFilter]);
+
+  const filteredChiTietHoDaNop = useMemo(() => {
+    if (!chiTietHoDaNop) return [];
+    const q = chiTietFilterText.trim().toLowerCase();
+    const feeQ = chiTietFeeFilter.trim().toLowerCase();
+    return chiTietHoDaNop.filter((pt) => {
+      if (q) {
+        const name = (pt.tenChuHo || "").toString().toLowerCase();
+        const code = (pt.maPhieuThu || "").toString().toLowerCase();
+        const rawHid = typeof pt.hoKhauId === "object" ? pt.hoKhauId?._id : pt.hoKhauId;
+        const hid = (rawHid || "").toString().toLowerCase();
+        if (!name.includes(q) && !code.includes(q) && !hid.includes(q)) return false;
+      }
+      if (feeQ) {
+        const fees = (pt.chiTietThu || []).map((ct) => (ct.tenKhoanThu || "").toString().toLowerCase());
+        if (!fees.some((f) => f.includes(feeQ))) return false;
+      }
+      return true;
+    });
+  }, [chiTietHoDaNop, chiTietFilterText, chiTietFeeFilter]);
+
+  const totalDaNopPages = Math.max(1, Math.ceil(filteredChiTietHoDaNop.length / DETAIL_PAGE_SIZE));
+  const pagedChiTietHoDaNop = useMemo(() => {
+    const start = (daNopPage - 1) * DETAIL_PAGE_SIZE;
+    return filteredChiTietHoDaNop.slice(start, start + DETAIL_PAGE_SIZE);
+  }, [filteredChiTietHoDaNop, daNopPage]);
+
+  const filteredChiTietHoChuaNop = useMemo(() => {
+    if (!chiTietHoChuaNop) return [];
+    const q = chiTietFilterText.trim().toLowerCase();
+    const feeQ = chiTietFeeFilter.trim().toLowerCase();
+    return chiTietHoChuaNop.filter((pt) => {
+      if (q) {
+        const name = (pt.tenChuHo || "").toString().toLowerCase();
+        const code = (pt.maPhieuThu || "").toString().toLowerCase();
+        const rawHid = typeof pt.hoKhauId === "object" ? pt.hoKhauId?._id : pt.hoKhauId;
+        const hid = (rawHid || "").toString().toLowerCase();
+        if (!name.includes(q) && !code.includes(q) && !hid.includes(q)) return false;
+      }
+      if (feeQ) {
+        const fees = (pt.chiTietThu || []).map((ct) => (ct.tenKhoanThu || "").toString().toLowerCase());
+        if (!fees.some((f) => f.includes(feeQ))) return false;
+      }
+      return true;
+    });
+  }, [chiTietHoChuaNop, chiTietFilterText, chiTietFeeFilter]);
+
+  const totalChuaNopPages = Math.max(1, Math.ceil(filteredChiTietHoChuaNop.length / DETAIL_PAGE_SIZE));
+  const pagedChiTietHoChuaNop = useMemo(() => {
+    const start = (chuaNopPage - 1) * DETAIL_PAGE_SIZE;
+    return filteredChiTietHoChuaNop.slice(start, start + DETAIL_PAGE_SIZE);
+  }, [filteredChiTietHoChuaNop, chuaNopPage]);
+
   return (
-    <div className="space-y-6">
+    <div className="page-stack">
       {/* Page Header */}
       <PageHeader
         title="Thống Kê Thu Phí & Đối Soát"
@@ -371,8 +436,13 @@ export default function ThongKePage() {
           { label: "Thống kê thu phí" },
         ]}
         actions={
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-2xs">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <StatsToggle
+              expanded={showStats}
+              onToggle={toggleStats}
+              controls={statsGridId}
+            />
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-2xs shrink-0">
               <Calendar className="w-3.5 h-3.5 text-slate-500" />
               <label htmlFor="year-select" className="text-xs font-medium text-slate-600">
                 Năm:
@@ -400,49 +470,50 @@ export default function ThongKePage() {
       />
 
       {/* Year Summary Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div
+        id={statsGridId}
+        hidden={!showStats}
+        className={showStats ? "grid grid-cols-2 lg:grid-cols-4 gap-2.5" : "hidden"}
+      >
         <StatCard
+          variant="compact"
           title="TỔNG THU TRONG NĂM"
           value={formatVND(yearSummary.totalRevenue)}
           subtitle={`Số liệu tổng hợp năm ${nam}`}
-          icon={<Coins className="w-5 h-5" />}
-          accent="blue"
+          icon={<Coins className="w-4 h-4" />}
           trend={{
             value: `${yearSummary.totalPeriods} đợt`,
             neutral: true,
           }}
         />
-
         <StatCard
+          variant="compact"
           title="LƯỢT HỘ ĐÃ NỘP"
           value={`${yearSummary.totalPaidHouseholds} lượt`}
           subtitle="Số lượt hoàn thành nộp phí"
-          icon={<CheckCircle2 className="w-5 h-5" />}
-          accent="emerald"
+          icon={<CheckCircle2 className="w-4 h-4" />}
           trend={{
             value: "Đã thu",
             isPositive: true,
           }}
         />
-
         <StatCard
+          variant="compact"
           title="LƯỢT HỘ CHƯA NỘP"
           value={`${yearSummary.totalUnpaidHouseholds} lượt`}
           subtitle="Ghi nhận chưa hoàn thành nghĩa vụ"
-          icon={<AlertCircle className="w-5 h-5" />}
-          accent="rose"
+          icon={<AlertCircle className="w-4 h-4" />}
           trend={{
             value: "Cần thu",
             isPositive: false,
           }}
         />
-
         <StatCard
+          variant="compact"
           title="ĐỢT THU ĐANG CHỌN"
           value={selectedDot || "Chưa chọn"}
           subtitle="Nhấn vào đợt thu bên dưới để đối soát"
-          icon={<FileText className="w-5 h-5" />}
-          accent="purple"
+          icon={<FileText className="w-4 h-4" />}
           trend={{
             value: selectedDot ? "Đang xem" : "Mặc định",
             neutral: true,
@@ -751,7 +822,7 @@ export default function ThongKePage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {chiTietHoDaNop && chiTietHoDaNop.length === 0 ? (
+                        {filteredChiTietHoDaNop.length === 0 ? (
                           <tr>
                             <td
                               colSpan={selectedDot.toLowerCase().includes("tháng") ? 9 : 8}
@@ -761,31 +832,8 @@ export default function ThongKePage() {
                             </td>
                           </tr>
                         ) : (
-                          chiTietHoDaNop
-                            ?.filter((pt) => {
-                              const q = chiTietFilterText.trim().toLowerCase();
-                              const feeQ = chiTietFeeFilter.trim().toLowerCase();
-                              if (q) {
-                                const name = (pt.tenChuHo || "").toString().toLowerCase();
-                                const code = (pt.maPhieuThu || "").toString().toLowerCase();
-                                const rawHid =
-                                  typeof pt.hoKhauId === "object"
-                                    ? pt.hoKhauId?._id
-                                    : pt.hoKhauId;
-                                const hid = (rawHid || "").toString().toLowerCase();
-                                if (!name.includes(q) && !code.includes(q) && !hid.includes(q))
-                                  return false;
-                              }
-                              if (feeQ) {
-                                const fees = (pt.chiTietThu || []).map((ct) =>
-                                  (ct.tenKhoanThu || "").toString().toLowerCase()
-                                );
-                                if (!fees.some((f) => f.includes(feeQ))) return false;
-                              }
-                              return true;
-                            })
-                            .map((pt) => {
-                              const hoId =
+                          pagedChiTietHoDaNop.map((pt) => {
+                            const hoId =
                                 typeof pt.hoKhauId === "object"
                                   ? pt.hoKhauId?._id
                                   : pt.hoKhauId;
@@ -853,6 +901,33 @@ export default function ThongKePage() {
                       </tbody>
                     </table>
                   </div>
+                  {filteredChiTietHoDaNop.length > 0 && (
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-4 py-2.5 bg-slate-50/50">
+                      <p className="text-xs text-slate-500">
+                        Tổng số <strong className="tabular-nums text-slate-800">{filteredChiTietHoDaNop.length}</strong> hộ · Trang <strong className="tabular-nums text-slate-800">{daNopPage}</strong> / {totalDaNopPages}
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setDaNopPage((p) => Math.max(1, p - 1))}
+                          disabled={daNopPage <= 1}
+                          leftIcon={<ChevronLeft className="h-3 w-3" />}
+                        >
+                          Trước
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setDaNopPage((p) => Math.min(totalDaNopPages, p + 1))}
+                          disabled={daNopPage >= totalDaNopPages}
+                          rightIcon={<ChevronRight className="h-3 w-3" />}
+                        >
+                          Sau
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -887,7 +962,7 @@ export default function ThongKePage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {chiTietHoChuaNop && chiTietHoChuaNop.length === 0 ? (
+                        {filteredChiTietHoChuaNop.length === 0 ? (
                           <tr>
                             <td
                               colSpan={selectedDot.toLowerCase().includes("tháng") ? 9 : 8}
@@ -897,102 +972,106 @@ export default function ThongKePage() {
                             </td>
                           </tr>
                         ) : (
-                          chiTietHoChuaNop
-                            ?.filter((pt) => {
-                              const q = chiTietFilterText.trim().toLowerCase();
-                              const feeQ = chiTietFeeFilter.trim().toLowerCase();
-                              if (q) {
-                                const name = (pt.tenChuHo || "").toString().toLowerCase();
-                                const code = (pt.maPhieuThu || "").toString().toLowerCase();
-                                const rawHid =
-                                  typeof pt.hoKhauId === "object"
-                                    ? pt.hoKhauId?._id
-                                    : pt.hoKhauId;
-                                const hid = (rawHid || "").toString().toLowerCase();
-                                if (!name.includes(q) && !code.includes(q) && !hid.includes(q))
-                                  return false;
-                              }
-                              if (feeQ) {
-                                const fees = (pt.chiTietThu || []).map((ct) =>
-                                  (ct.tenKhoanThu || "").toString().toLowerCase()
-                                );
-                                if (!fees.some((f) => f.includes(feeQ))) return false;
-                              }
-                              return true;
-                            })
-                            .map((pt) => {
-                              const hoId =
-                                typeof pt.hoKhauId === "object"
-                                  ? pt.hoKhauId?._id
-                                  : pt.hoKhauId;
-                              const isCurrentHo = selectedHo === hoId;
+                          pagedChiTietHoChuaNop.map((pt) => {
+                            const hoId =
+                              typeof pt.hoKhauId === "object"
+                                ? pt.hoKhauId?._id
+                                : pt.hoKhauId;
+                            const isCurrentHo = selectedHo === hoId;
 
-                              return (
-                                <tr
-                                  key={pt._id}
-                                  onClick={() => openHoDetails(hoId)}
-                                  className={`cursor-pointer transition-colors ${
-                                    isCurrentHo
-                                      ? "bg-rose-50/60"
-                                      : "hover:bg-slate-50/70"
-                                  }`}
-                                >
-                                  <td className="p-3 font-mono font-bold text-rose-700">
-                                    {pt.maPhieuThu || "—"}
-                                  </td>
-                                  {selectedDot.toLowerCase().includes("tháng") && (
-                                    <td className="p-3 text-slate-700 max-w-[150px] truncate">
-                                      {pt.chiTietThu && pt.chiTietThu.length > 0
-                                        ? pt.chiTietThu.map((ct) => ct.tenKhoanThu).join(", ")
-                                        : "—"}
-                                    </td>
-                                  )}
-                                  <td className="p-3 font-mono text-slate-500">
-                                    {(hoId || "").toString().slice(0, 8)}...
-                                  </td>
-                                  <td className="p-3 font-bold text-slate-900">
-                                    {pt.tenChuHo || "—"}
-                                  </td>
-                                  <td className="p-3 text-slate-600 max-w-[160px] truncate">
-                                    {pt.diaChi || "—"}
-                                  </td>
-                                  <td className="p-3 text-slate-600 tabular-nums">
-                                    {pt.ngayThu
-                                      ? new Date(pt.ngayThu).toLocaleDateString("vi-VN")
+                            return (
+                              <tr
+                                key={pt._id}
+                                onClick={() => openHoDetails(hoId)}
+                                className={`cursor-pointer transition-colors ${
+                                  isCurrentHo
+                                    ? "bg-rose-50/60"
+                                    : "hover:bg-slate-50/70"
+                                }`}
+                              >
+                                <td className="p-3 font-mono font-bold text-rose-700">
+                                  {pt.maPhieuThu || "—"}
+                                </td>
+                                {selectedDot.toLowerCase().includes("tháng") && (
+                                  <td className="p-3 text-slate-700 max-w-[150px] truncate">
+                                    {pt.chiTietThu && pt.chiTietThu.length > 0
+                                      ? pt.chiTietThu.map((ct) => ct.tenKhoanThu).join(", ")
                                       : "—"}
                                   </td>
-                                  <td className="p-3 text-center">
-                                    <Badge
-                                      variant={pt.trangThai === "Đang nợ" ? "danger" : "warning"}
-                                      size="sm"
-                                      dot
-                                    >
-                                      {pt.trangThai || "Chưa nộp"}
-                                    </Badge>
-                                  </td>
-                                  <td className="p-3 text-right font-bold text-rose-600 tabular-nums">
-                                    {formatVND(pt.tongTien)}
-                                  </td>
-                                  <td className="p-3 text-right">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e: React.MouseEvent) => {
-                                        e.stopPropagation();
-                                        openHoDetails(hoId);
-                                      }}
-                                      leftIcon={<History className="w-3.5 h-3.5" />}
-                                    >
-                                      Lịch sử
-                                    </Button>
-                                  </td>
-                                </tr>
-                              );
-                            })
+                                )}
+                                <td className="p-3 font-mono text-slate-500">
+                                  {(hoId || "").toString().slice(0, 8)}...
+                                </td>
+                                <td className="p-3 font-bold text-slate-900">
+                                  {pt.tenChuHo || "—"}
+                                </td>
+                                <td className="p-3 text-slate-600 max-w-[160px] truncate">
+                                  {pt.diaChi || "—"}
+                                </td>
+                                <td className="p-3 text-slate-600 tabular-nums">
+                                  {pt.ngayThu
+                                    ? new Date(pt.ngayThu).toLocaleDateString("vi-VN")
+                                    : "—"}
+                                </td>
+                                <td className="p-3 text-center">
+                                  <Badge
+                                    variant={pt.trangThai === "Đang nợ" ? "danger" : "warning"}
+                                    size="sm"
+                                    dot
+                                  >
+                                    {pt.trangThai || "Chưa nộp"}
+                                  </Badge>
+                                </td>
+                                <td className="p-3 text-right font-bold text-rose-600 tabular-nums">
+                                  {formatVND(pt.tongTien)}
+                                </td>
+                                <td className="p-3 text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e: React.MouseEvent) => {
+                                      e.stopPropagation();
+                                      openHoDetails(hoId);
+                                    }}
+                                    leftIcon={<History className="w-3.5 h-3.5" />}
+                                  >
+                                    Lịch sử
+                                  </Button>
+                                </td>
+                              </tr>
+                            );
+                          })
                         )}
                       </tbody>
                     </table>
                   </div>
+                  {filteredChiTietHoChuaNop.length > 0 && (
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-4 py-2.5 bg-slate-50/50">
+                      <p className="text-xs text-slate-500">
+                        Tổng số <strong className="tabular-nums text-slate-800">{filteredChiTietHoChuaNop.length}</strong> hộ · Trang <strong className="tabular-nums text-slate-800">{chuaNopPage}</strong> / {totalChuaNopPages}
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setChuaNopPage((p) => Math.max(1, p - 1))}
+                          disabled={chuaNopPage <= 1}
+                          leftIcon={<ChevronLeft className="h-3 w-3" />}
+                        >
+                          Trước
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setChuaNopPage((p) => Math.min(totalChuaNopPages, p + 1))}
+                          disabled={chuaNopPage >= totalChuaNopPages}
+                          rightIcon={<ChevronRight className="h-3 w-3" />}
+                        >
+                          Sau
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

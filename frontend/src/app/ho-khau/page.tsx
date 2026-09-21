@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -377,7 +377,29 @@ export default function HoKhauPage() {
     );
   };
 
-  const safeList = Array.isArray(hoKhauList) ? hoKhauList : [];
+  const safeList = useMemo(
+    () => (Array.isArray(hoKhauList) ? hoKhauList : []),
+    [hoKhauList]
+  );
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterTrangThai]);
+
+  const totalPages = Math.max(1, Math.ceil(safeList.length / PAGE_SIZE));
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const pagedList = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return safeList.slice(start, start + PAGE_SIZE);
+  }, [safeList, currentPage]);
 
   // Định nghĩa cột cho DataTable
   const columns: Column<HoKhau>[] = [
@@ -594,13 +616,19 @@ export default function HoKhauPage() {
       {/* Data Table */}
       <DataTable
         columns={columns}
-        data={safeList}
+        data={pagedList}
         keyExtractor={(row: HoKhau, index: number) => row._id || row.id || `ho-khau-${index}`}
         isLoading={isLoading}
         isError={isError}
         errorMessage={error ? (error as Error).message : "Không tải được danh sách hộ khẩu"}
         onRetry={() => refetch()}
         emptyMessage="Không tìm thấy sổ hộ khẩu nào phù hợp"
+        pagination={{
+          currentPage,
+          totalPages,
+          totalItems: safeList.length,
+          onPageChange: setCurrentPage,
+        }}
       />
 
       {/* ========== MODALS ========== */}

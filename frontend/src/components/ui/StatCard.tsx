@@ -28,30 +28,30 @@ export const StatCard: React.FC<StatCardProps> = ({
   if (variant === "compact") {
     return (
       <div
-        className={`min-w-0 rounded-xl border border-slate-200 bg-white p-2.5 sm:p-3 shadow-xs transition-colors hover:border-slate-300 flex flex-col justify-between ${className}`}
+        className={`min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:px-3.5 sm:py-2.5 shadow-2xs transition-colors hover:border-slate-300 flex flex-col justify-center ${className}`}
       >
-        <dl className="min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 truncate">
+        <div className="flex items-center gap-2.5 min-w-0">
+          {icon && (
+            <div
+              aria-hidden="true"
+              className="h-7 w-7 rounded-lg bg-slate-50 border border-slate-100 shrink-0 text-slate-400 flex items-center justify-center [&>svg]:w-3.5 [&>svg]:h-3.5"
+            >
+              {icon}
+            </div>
+          )}
+          <dl className="min-w-0 flex-1">
+            <dt className="text-xs font-semibold uppercase tracking-wider text-slate-500 leading-tight">
               {title}
             </dt>
-            {icon && (
-              <div
-                aria-hidden="true"
-                className="h-6 w-6 shrink-0 text-slate-400 flex items-center justify-center"
-              >
-                {icon}
-              </div>
-            )}
-          </div>
-          <dd className="mt-1 text-lg sm:text-xl font-bold tracking-tight text-slate-900 tabular-nums break-words">
-            {value}
-          </dd>
-        </dl>
+            <dd className="text-base sm:text-lg font-bold tracking-tight text-slate-900 tabular-nums break-words leading-tight mt-0.5">
+              {value}
+            </dd>
+          </dl>
+        </div>
 
         {(subtitle || trend) && (
-          <div className="mt-2 pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 text-[11px] text-slate-500">
-            {subtitle && <span className="truncate">{subtitle}</span>}
+          <div className="mt-1.5 pt-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 border-t border-slate-100 text-xs text-slate-500 leading-normal">
+            {subtitle && <span className="break-words">{subtitle}</span>}
             {trend && (
               <span
                 className={`ml-auto font-medium ${

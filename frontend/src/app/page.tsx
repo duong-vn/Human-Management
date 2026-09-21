@@ -2,7 +2,7 @@
 
 import { getUser, subscribeAuth, User } from "@/lib/AuthToken";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useId } from "react";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
 import {
@@ -27,6 +27,8 @@ import {
   CardContent,
   Badge,
   PageHeader,
+  useStatsVisibility,
+  StatsToggle,
 } from "@/components/ui";
 
 // Type definitions for clean type safety
@@ -241,6 +243,8 @@ function LandingPage() {
 
 // Management Dashboard dành cho cán bộ đã đăng nhập
 function Dashboard() {
+  const statsGridId = useId();
+  const { showStats, toggleStats } = useStatsVisibility("hide_stats_dashboard");
   const {
     data: hoKhauStats,
     isLoading: isHoKhauLoading,
@@ -379,30 +383,42 @@ function Dashboard() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="page-stack">
       {/* Page Header */}
       <PageHeader
         title="Bảng Điều Khiển Quản Lý Dân Cư"
         description={`Theo dõi chỉ số hộ tịch, biến động nhân khẩu và tiến độ thu quỹ năm ${currentYear}`}
         badge={<Badge variant="primary" size="sm">TDP 7 Phường La Khê</Badge>}
         actions={
-          <div className="flex items-center gap-2 text-xs text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-2xs font-medium">
-            <Clock className="w-3.5 h-3.5 text-blue-700 shrink-0" />
-            <span>
-              {new Date().toLocaleDateString("vi-VN", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-            </span>
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <StatsToggle
+              expanded={showStats}
+              onToggle={toggleStats}
+              controls={statsGridId}
+            />
+            <div className="flex items-center gap-2 text-xs text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-2xs font-medium shrink-0">
+              <Clock className="w-3.5 h-3.5 text-blue-700 shrink-0" />
+              <span>
+                {new Date().toLocaleDateString("vi-VN", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </span>
+            </div>
           </div>
         }
       />
 
       {/* Row 1: KPI StatCards - Error handling via query flags (no errors converted to 0) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div
+        id={statsGridId}
+        hidden={!showStats}
+        className={showStats ? "grid grid-cols-2 lg:grid-cols-4 gap-2.5" : "hidden"}
+      >
         <StatCard
+          variant="compact"
           title="TỔNG SỐ HỘ KHẨU"
           value={
             isHoKhauError
@@ -418,8 +434,7 @@ function Dashboard() {
               ? "Đang tải dữ liệu..."
               : `${hoKhauStats?.dangHoatDong ?? 0} hộ đang thường trú`
           }
-          icon={<Building2 className="w-5 h-5" />}
-          accent="blue"
+          icon={<Building2 className="w-4 h-4" />}
           trend={{
             value: isHoKhauError ? "Lỗi truy vấn" : "100% sổ hộ",
             neutral: true,
@@ -427,6 +442,7 @@ function Dashboard() {
         />
 
         <StatCard
+          variant="compact"
           title="TỔNG SỐ NHÂN KHẨU"
           value={
             isNhanKhauError
@@ -442,8 +458,7 @@ function Dashboard() {
               ? "Đang tải cơ cấu..."
               : `Nam: ${gioiTinhStats?.nam ?? 0} • Nữ: ${gioiTinhStats?.nu ?? 0}`
           }
-          icon={<Users className="w-5 h-5" />}
-          accent="blue"
+          icon={<Users className="w-4 h-4" />}
           trend={{
             value: isTuoiError
               ? "Lỗi tải tuổi"
@@ -457,6 +472,7 @@ function Dashboard() {
         />
 
         <StatCard
+          variant="compact"
           title={`THU QUỸ NĂM ${currentYear}`}
           value={
             isThuPhiError
@@ -474,8 +490,7 @@ function Dashboard() {
               ? "Đang tải tiến độ..."
               : `${thuPhiStats?.soPhieuThu ?? 0} phiếu thu hoàn thành`
           }
-          icon={<CreditCard className="w-5 h-5" />}
-          accent="blue"
+          icon={<CreditCard className="w-4 h-4" />}
           trend={{
             value: isThuPhiError ? "Lỗi truy vấn" : "Kỳ hiện hành",
             neutral: true,
@@ -483,6 +498,7 @@ function Dashboard() {
         />
 
         <StatCard
+          variant="compact"
           title="BIẾN ĐỘNG CƯ TRÚ"
           value={
             isTamTruError
@@ -501,8 +517,7 @@ function Dashboard() {
                   tamTruTamVangStats?.tamVang ?? 0
                 }`
           }
-          icon={<FileCheck className="w-5 h-5" />}
-          accent="slate"
+          icon={<FileCheck className="w-4 h-4" />}
           trend={{
             value: isTamTruError ? "Lỗi truy vấn" : "Đã xác nhận",
             neutral: true,

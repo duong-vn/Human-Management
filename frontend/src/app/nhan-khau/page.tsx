@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useId } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
 import { toast } from "sonner";
@@ -18,8 +18,6 @@ import {
   Home,
   Briefcase,
   Skull,
-  ChevronUp,
-  ChevronDown,
 } from "lucide-react";
 
 import {
@@ -40,6 +38,8 @@ import {
   Modal,
   StatCard,
   ConfirmDialog,
+  useStatsVisibility,
+  StatsToggle,
 } from "@/components/ui";
 import type { Column } from "@/components/ui";
 
@@ -59,30 +59,8 @@ export default function NhanKhauPage() {
   const queryClient = useQueryClient();
 
   // --- STATES ---
-  const [showStats, setShowStats] = useState(true);
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("hide_stats_nhan_khau");
-      if (saved === "true") {
-        setShowStats(false);
-      }
-    } catch {
-      // ignore storage access error
-    }
-  }, []);
-
-  const toggleStats = () => {
-    setShowStats((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem("hide_stats_nhan_khau", String(!next));
-      } catch {
-        // ignore storage access error
-      }
-      return next;
-    });
-  };
+  const statsGridId = useId();
+  const { showStats, toggleStats } = useStatsVisibility("hide_stats_nhan_khau");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMoiSinhModalOpen, setIsMoiSinhModalOpen] = useState(false);
@@ -100,6 +78,13 @@ export default function NhanKhauPage() {
   const [searchID, setSearchID] = useState("");
   const [searchYear, setSearchYear] = useState("");
   const [searchGender, setSearchGender] = useState("");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchName, searchID, searchYear, searchGender]);
 
   const [moiSinhForm, setMoiSinhForm] = useState({
     hoTen: "",
@@ -126,7 +111,7 @@ export default function NhanKhauPage() {
   const { data: statsData } = useQuery({
     queryKey: ["nhan-khau-stats"],
     queryFn: getThongKeNhanKhau,
-    initialData: { total: 0, male: 0, female: 0, avgAge: 0 },
+    placeholderData: { total: 0, male: 0, female: 0, avgAge: 0 },
   });
 
   const { data: listHoKhau = [] } = useQuery<HoKhauOption[]>({
@@ -291,6 +276,18 @@ export default function NhanKhauPage() {
     });
   }, [safeList, searchName, searchID, searchYear, searchGender]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / PAGE_SIZE));
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const pagedList = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredList.slice(start, start + PAGE_SIZE);
+  }, [filteredList, currentPage]);
+
   // Columns for DataTable
   const columns: Column<ExtendedNhanKhau>[] = [
     {
@@ -438,17 +435,12 @@ export default function NhanKhauPage() {
         title="Quản Lý Nhân Khẩu"
         description="Tra cứu, cập nhật thông tin lý lịch và thống kê dân số trong tổ dân phố"
         actions={
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={toggleStats}
-              leftIcon={showStats ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              className="text-slate-600 hover:text-slate-900"
-            >
-              {showStats ? "Thu gọn số liệu" : "Hiện số liệu"}
-            </Button>
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <StatsToggle
+              expanded={showStats}
+              onToggle={toggleStats}
+              controls={statsGridId}
+            />
             <Button
               type="button"
               variant="secondary"
@@ -475,34 +467,36 @@ export default function NhanKhauPage() {
       />
 
       {/* Stats Cards */}
-      {showStats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-          <StatCard
-            variant="compact"
-            title="Tổng nhân khẩu"
-            value={statsData?.total ?? 0}
-            icon={<Users className="w-4 h-4" />}
-          />
-          <StatCard
-            variant="compact"
-            title="Nam giới"
-            value={statsData?.male ?? 0}
-            icon={<User className="w-4 h-4" />}
-          />
-          <StatCard
-            variant="compact"
-            title="Nữ giới"
-            value={statsData?.female ?? 0}
-            icon={<User className="w-4 h-4" />}
-          />
-          <StatCard
-            variant="compact"
-            title="Tuổi trung bình"
-            value={`${statsData?.avgAge ?? 0} tuổi`}
-            icon={<Calendar className="w-4 h-4" />}
-          />
-        </div>
-      )}
+      <div
+        id={statsGridId}
+        hidden={!showStats}
+        className={showStats ? "grid grid-cols-2 lg:grid-cols-4 gap-2.5" : "hidden"}
+      >
+        <StatCard
+          variant="compact"
+          title="Tổng nhân khẩu"
+          value={statsData?.total ?? 0}
+          icon={<Users className="w-4 h-4" />}
+        />
+        <StatCard
+          variant="compact"
+          title="Nam giới"
+          value={statsData?.male ?? 0}
+          icon={<User className="w-4 h-4" />}
+        />
+        <StatCard
+          variant="compact"
+          title="Nữ giới"
+          value={statsData?.female ?? 0}
+          icon={<User className="w-4 h-4" />}
+        />
+        <StatCard
+          variant="compact"
+          title="Tuổi trung bình"
+          value={`${statsData?.avgAge ?? 0} tuổi`}
+          icon={<Calendar className="w-4 h-4" />}
+        />
+      </div>
 
       {/* Filter Bar */}
       <div className="filter-bar">
@@ -557,7 +551,7 @@ export default function NhanKhauPage() {
       {/* Data Table */}
       <DataTable
         columns={columns}
-        data={filteredList}
+        data={pagedList}
         keyExtractor={(item: ExtendedNhanKhau, index: number) => item._id || item.id || `nhan-khau-${index}`}
         isLoading={isLoadingList}
         isError={isErrorList}
@@ -565,6 +559,12 @@ export default function NhanKhauPage() {
         onRetry={() => refetch()}
         emptyMessage="Không tìm thấy nhân khẩu nào phù hợp với bộ lọc"
         onRowClick={(item: ExtendedNhanKhau) => setViewingItem(item)}
+        pagination={{
+          currentPage,
+          totalPages,
+          totalItems: filteredList.length,
+          onPageChange: setCurrentPage,
+        }}
       />
 
       {/* Modal Chi tiết Hồ Sơ Nhân Khẩu */}

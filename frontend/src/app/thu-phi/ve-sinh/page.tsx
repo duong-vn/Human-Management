@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useId } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -20,6 +20,8 @@ import {
   AlertCircle,
   Clock,
   RotateCw,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   getAllHoKhau,
@@ -37,6 +39,8 @@ import {
   StatCard,
   ConfirmDialog,
   Skeleton,
+  useStatsVisibility,
+  StatsToggle,
 } from "@/components/ui";
 
 interface KhoanThuItem {
@@ -119,6 +123,8 @@ function extractErrorMessage(err: unknown, fallback: string): string {
 
 export default function QuanLyCacKhoanThuPage() {
   const queryClient = useQueryClient();
+  const statsGridId = useId();
+  const { showStats, toggleStats } = useStatsVisibility("hide_stats_thu_phi_ve_sinh");
 
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -424,10 +430,29 @@ export default function QuanLyCacKhoanThuPage() {
     });
   }, [eligibleHoKhau, searchTerm, statusFilter, getSinglePaymentStatus]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, selectedMonth, selectedYear, activeKhoanThu]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredDisplayHoKhau.length / PAGE_SIZE));
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const pagedDisplayHoKhau = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredDisplayHoKhau.slice(start, start + PAGE_SIZE);
+  }, [filteredDisplayHoKhau, currentPage]);
+
   const isAnyError = isErrorHoKhau || isErrorKhoanThu || isErrorPhieuThu;
 
   return (
-    <div className="space-y-6">
+    <div className="page-stack">
       {/* Page Header */}
       <PageHeader
         title="Thu Phí Vệ Sinh & Định Kỳ"
@@ -437,6 +462,17 @@ export default function QuanLyCacKhoanThuPage() {
           { label: "Quản lý thu phí", href: "/thu-phi" },
           { label: "Thu phí vệ sinh & định kỳ" },
         ]}
+        actions={
+          activeKhoanThu ? (
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
+              <StatsToggle
+                expanded={showStats}
+                onToggle={toggleStats}
+                controls={statsGridId}
+              />
+            </div>
+          ) : undefined
+        }
       />
 
       {/* Finance Section Sub-Navigation Tabs */}
@@ -617,13 +653,17 @@ export default function QuanLyCacKhoanThuPage() {
 
       {/* Progress & Stat Cards Row */}
       {activeKhoanThu && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div
+          id={statsGridId}
+          hidden={!showStats}
+          className={showStats ? "grid grid-cols-1 sm:grid-cols-3 gap-2.5" : "hidden"}
+        >
           <StatCard
+            variant="compact"
             title="ĐÃ HOÀN THÀNH"
             value={`${stats.daThuCount} / ${stats.totalHouseholds} hộ`}
             subtitle={`Đã thu: ${Number(stats.totalCollectedMoney).toLocaleString("vi-VN")} đ`}
-            icon={<CheckCircle2 className="w-5 h-5" />}
-            accent="emerald"
+            icon={<CheckCircle2 className="w-4 h-4" />}
             trend={{
               value: `${
                 stats.totalHouseholds > 0
@@ -635,11 +675,11 @@ export default function QuanLyCacKhoanThuPage() {
           />
 
           <StatCard
+            variant="compact"
             title="ĐANG NỢ KHOẢN THU"
             value={`${stats.chuaThuCount} hộ`}
             subtitle="Hộ đã ghi nhận nợ cần đôn đốc"
-            icon={<AlertCircle className="w-5 h-5" />}
-            accent="amber"
+            icon={<AlertCircle className="w-4 h-4" />}
             trend={{
               value: "Cần đôn đốc",
               isPositive: false,
@@ -647,11 +687,11 @@ export default function QuanLyCacKhoanThuPage() {
           />
 
           <StatCard
+            variant="compact"
             title="CHƯA NỘP / CHƯA GHI NHẬN"
             value={`${stats.noneCount} hộ`}
             subtitle="Chưa phát sinh biên lai nộp kỳ này"
-            icon={<Clock className="w-5 h-5" />}
-            accent="slate"
+            icon={<Clock className="w-4 h-4" />}
             trend={{
               value: "Chưa thu",
               neutral: true,
@@ -735,7 +775,7 @@ export default function QuanLyCacKhoanThuPage() {
                   </td>
                 </tr>
               ) : (
-                filteredDisplayHoKhau.map((hk) => {
+                pagedDisplayHoKhau.map((hk) => {
                   const hkId = getCleanId(hk);
                   const soNK = hk.thanhVien?.length || 0;
                   const { tongTien } = calculateFee(hk);
@@ -829,6 +869,34 @@ export default function QuanLyCacKhoanThuPage() {
             </tbody>
           </table>
         </div>
+
+        {filteredDisplayHoKhau.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-4 py-3">
+            <p className="text-xs text-slate-500">
+              Tổng số <strong className="tabular-nums text-slate-800">{filteredDisplayHoKhau.length}</strong> bản ghi · Trang <strong className="tabular-nums text-slate-800">{currentPage}</strong> / {totalPages}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={isLoadingHoKhau || currentPage <= 1}
+                leftIcon={<ChevronLeft className="h-3.5 w-3.5" />}
+              >
+                Trước
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={isLoadingHoKhau || currentPage >= totalPages}
+                rightIcon={<ChevronRight className="h-3.5 w-3.5" />}
+              >
+                Sau
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Confirm Payment Modal */}

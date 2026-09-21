@@ -44,6 +44,9 @@ export default function Sidebar() {
   const drawerRef = useRef<HTMLDialogElement>(null);
 
   const handleLogout = async () => {
+    if (typeof window !== "undefined" && !window.confirm("Bạn có chắc chắn muốn đăng xuất không?")) {
+      return;
+    }
     closeMobile();
     clearUser();
     setAT(null);

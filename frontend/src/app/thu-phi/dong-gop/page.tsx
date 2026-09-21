@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useId } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -20,6 +20,8 @@ import {
   Coins,
   Sparkles,
   RotateCw,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   getAllHoKhau,
@@ -40,6 +42,8 @@ import {
   Modal,
   ConfirmDialog,
   Skeleton,
+  useStatsVisibility,
+  StatsToggle,
 } from "@/components/ui";
 
 interface KhoanThuTuNguyen {
@@ -106,6 +110,8 @@ function extractErrorMessage(err: unknown, fallback: string): string {
 
 export default function QuanLyDongGopPage() {
   const queryClient = useQueryClient();
+  const statsGridId = useId();
+  const { showStats, toggleStats } = useStatsVisibility("hide_stats_thu_phi_dong_gop");
 
   // State UI
   const [expandedCampaignId, setExpandedCampaignId] = useState<string | null>(null);
@@ -346,10 +352,24 @@ export default function QuanLyDongGopPage() {
     return new Intl.NumberFormat("vi-VN").format(val) + " đ";
   };
 
+  const [campCurrentPage, setCampCurrentPage] = useState(1);
+  const CAMP_PAGE_SIZE = 5;
+  const totalCampPages = Math.max(1, Math.ceil(campaigns.length / CAMP_PAGE_SIZE));
+  useEffect(() => {
+    if (campCurrentPage > totalCampPages) {
+      setCampCurrentPage(1);
+    }
+  }, [totalCampPages, campCurrentPage]);
+
+  const pagedCampaigns = useMemo(() => {
+    const start = (campCurrentPage - 1) * CAMP_PAGE_SIZE;
+    return campaigns.slice(start, start + CAMP_PAGE_SIZE);
+  }, [campaigns, campCurrentPage]);
+
   const isAnyError = isErrorKhoanThu || isErrorPhieuThu;
 
   return (
-    <div className="space-y-6">
+    <div className="page-stack">
       {/* Page Header */}
       <PageHeader
         title="Vận Động Đóng Góp Tự Nguyện"
@@ -360,14 +380,21 @@ export default function QuanLyDongGopPage() {
           { label: "Vận động đóng góp" },
         ]}
         actions={
-          <Button
-            variant="primary"
-            size="md"
-            leftIcon={<Plus className="w-4 h-4" />}
-            onClick={() => setIsCreateCampaignOpen(true)}
-          >
-            Tạo chiến dịch mới
-          </Button>
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <StatsToggle
+              expanded={showStats}
+              onToggle={toggleStats}
+              controls={statsGridId}
+            />
+            <Button
+              variant="primary"
+              size="md"
+              leftIcon={<Plus className="w-4 h-4" />}
+              onClick={() => setIsCreateCampaignOpen(true)}
+            >
+              Tạo chiến dịch mới
+            </Button>
+          </div>
         }
       />
 
@@ -423,13 +450,17 @@ export default function QuanLyDongGopPage() {
       )}
 
       {/* Overall KPI Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div
+        id={statsGridId}
+        hidden={!showStats}
+        className={showStats ? "grid grid-cols-1 sm:grid-cols-3 gap-2.5" : "hidden"}
+      >
         <StatCard
+          variant="compact"
           title="TỔNG SỐ CHIẾN DỊCH"
           value={isLoadingKhoanThu ? "..." : `${overallStats.totalCampaigns} đợt`}
           subtitle={`Tổng lượt đóng góp: ${overallStats.totalDonationsCount} lượt`}
-          icon={<Heart className="w-5 h-5" />}
-          accent="purple"
+          icon={<Heart className="w-4 h-4" />}
           trend={{
             value: "Tự nguyện",
             neutral: true,
@@ -437,11 +468,11 @@ export default function QuanLyDongGopPage() {
         />
 
         <StatCard
+          variant="compact"
           title="TỔNG THỰC NHẬN"
           value={isLoadingPhieuThu ? "..." : formatCurrency(overallStats.totalCollected)}
           subtitle="Số tiền mặt/chuyển khoản đã hoàn thành"
-          icon={<CheckCircle2 className="w-5 h-5" />}
-          accent="emerald"
+          icon={<CheckCircle2 className="w-4 h-4" />}
           trend={{
             value: "Đã thu",
             isPositive: true,
@@ -449,11 +480,11 @@ export default function QuanLyDongGopPage() {
         />
 
         <StatCard
+          variant="compact"
           title="CHƯA NỘP (CAM KẾT)"
           value={isLoadingPhieuThu ? "..." : formatCurrency(overallStats.totalPending)}
           subtitle="Các hộ đã đăng ký ủng hộ chờ thu tiền"
-          icon={<Coins className="w-5 h-5" />}
-          accent="amber"
+          icon={<Coins className="w-4 h-4" />}
           trend={{
             value: "Chờ thu",
             isPositive: false,
@@ -489,7 +520,7 @@ export default function QuanLyDongGopPage() {
             </p>
           </Card>
         ) : (
-          campaigns.map((camp) => {
+          pagedCampaigns.map((camp) => {
             const campId = camp._id || camp.id || "";
             const isExpanded = expandedCampaignId === campId;
             const hasDonations = camp.donations.length > 0;
@@ -726,6 +757,34 @@ export default function QuanLyDongGopPage() {
               </Card>
             );
           })
+        )}
+
+        {campaigns.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border border-slate-200 bg-white rounded-xl px-4 py-3 shadow-2xs">
+            <p className="text-xs text-slate-500">
+              Tổng số <strong className="tabular-nums text-slate-800">{campaigns.length}</strong> chiến dịch · Trang <strong className="tabular-nums text-slate-800">{campCurrentPage}</strong> / {totalCampPages}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setCampCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={isLoadingKhoanThu || campCurrentPage <= 1}
+                leftIcon={<ChevronLeft className="h-3.5 w-3.5" />}
+              >
+                Trước
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setCampCurrentPage((p) => Math.min(totalCampPages, p + 1))}
+                disabled={isLoadingKhoanThu || campCurrentPage >= totalCampPages}
+                rightIcon={<ChevronRight className="h-3.5 w-3.5" />}
+              >
+                Sau
+              </Button>
+            </div>
+          </div>
         )}
       </div>
 

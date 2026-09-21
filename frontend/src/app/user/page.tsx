@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
 import { createUser, deleteUser, getAllUsers, updateUser } from "./api";
@@ -153,13 +153,34 @@ export default function UserPage() {
     }
   };
 
-  const safeList = Array.isArray(list) ? list : [];
-  const filteredList = safeList.filter((item) => {
-    const matchesSearch = item.hoTen && item.hoTen.toLowerCase().includes(searchTerm.toLowerCase().trim());
-    const matchesRole = !filterRole || item.role === filterRole;
-    const matchesActive = filterActive === "" || item.isActive === (filterActive === "true");
-    return (matchesSearch || !searchTerm) && matchesRole && matchesActive;
-  });
+  const safeList = useMemo(() => (Array.isArray(list) ? list : []), [list]);
+  const filteredList = useMemo(() => {
+    return safeList.filter((item) => {
+      const matchesSearch = item.hoTen && item.hoTen.toLowerCase().includes(searchTerm.toLowerCase().trim());
+      const matchesRole = !filterRole || item.role === filterRole;
+      const matchesActive = filterActive === "" || item.isActive === (filterActive === "true");
+      return (matchesSearch || !searchTerm) && matchesRole && matchesActive;
+    });
+  }, [safeList, searchTerm, filterRole, filterActive]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterRole, filterActive]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / PAGE_SIZE));
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const pagedList = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredList.slice(start, start + PAGE_SIZE);
+  }, [filteredList, currentPage]);
 
   const columns: Column<ExtendedUser>[] = [
     {
@@ -318,13 +339,19 @@ export default function UserPage() {
       {/* Main Table */}
       <DataTable
         columns={columns}
-        data={filteredList}
+        data={pagedList}
         keyExtractor={(item: ExtendedUser, index: number) => item._id || item.id || `user-${index}`}
         isLoading={isLoading}
         isError={isError}
         errorMessage={(error as Error)?.message || "Không thể tải danh sách cán bộ"}
         onRetry={() => queryClient.invalidateQueries({ queryKey: ["users"] })}
         emptyMessage="Không tìm thấy cán bộ nào phù hợp với bộ lọc"
+        pagination={{
+          currentPage,
+          totalPages,
+          totalItems: filteredList.length,
+          onPageChange: setCurrentPage,
+        }}
       />
 
       {/* Modals */}

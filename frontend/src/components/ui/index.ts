@@ -7,3 +7,4 @@ export * from "./Modal";
 export * from "./ConfirmDialog";
 export * from "./PageHeader";
 export * from "./DataTable";
+export * from "./StatsVisibility";

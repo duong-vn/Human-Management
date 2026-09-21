@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
 import { createTamTruTamVang, deleteTamTruTamVang, getAllTamTruTamVang, updateTamTruTamVang } from "./api";
@@ -135,6 +135,25 @@ export default function TamTruTamVangPage() {
       return true;
     });
   }, [list, searchTerm, filterLoai, filterTrangThai]);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterLoai, filterTrangThai]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / PAGE_SIZE));
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const pagedList = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredList.slice(start, start + PAGE_SIZE);
+  }, [filteredList, currentPage]);
 
   const formatDiaChi = (diaChi?: DiaChi) => {
     if (!diaChi || typeof diaChi !== "object") return "---";
@@ -324,7 +343,7 @@ export default function TamTruTamVangPage() {
       {/* Table */}
       <DataTable
         columns={columns}
-        data={filteredList}
+        data={pagedList}
         keyExtractor={(item: TamTruTamVang, index: number) => item._id || item.id || `tam-tru-${index}`}
         isLoading={isLoading}
         isError={isError}
@@ -332,6 +351,12 @@ export default function TamTruTamVangPage() {
         onRetry={() => queryClient.invalidateQueries({ queryKey: ["tam-tru-tam-vang"] })}
         emptyMessage="Không tìm thấy hồ sơ tạm trú / tạm vắng nào"
         onRowClick={(item: TamTruTamVang) => handleOpenView(item)}
+        pagination={{
+          currentPage,
+          totalPages,
+          totalItems: filteredList.length,
+          onPageChange: setCurrentPage,
+        }}
       />
 
       {/* Modals */}

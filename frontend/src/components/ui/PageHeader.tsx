@@ -26,11 +26,11 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 }) => {
   return (
     <div
-      className={`mb-5 flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-end lg:justify-between ${className}`}
+      className={`flex flex-col gap-3 border-b border-slate-200 pb-3.5 lg:flex-row lg:items-end lg:justify-between ${className}`}
     >
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <nav aria-label="Đường dẫn" className="mb-2 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+          <nav aria-label="Đường dẫn" className="mb-1.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
             {breadcrumbs.map((item, idx) => {
               const isLast = idx === breadcrumbs.length - 1;
               return (
@@ -56,22 +56,22 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           </nav>
         )}
 
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
             {title}
           </h1>
           {badge}
         </div>
 
         {description && (
-          <p className="text-sm text-slate-500 max-w-2xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
             {description}
           </p>
         )}
       </div>
 
       {actions && (
-        <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+        <div className="flex items-center gap-2 flex-wrap min-w-0 max-w-full">
           {actions}
         </div>
       )}
