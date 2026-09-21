@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
 import { toast } from "sonner";
@@ -18,6 +18,8 @@ import {
   Home,
   Briefcase,
   Skull,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 
 import {
@@ -57,6 +59,31 @@ export default function NhanKhauPage() {
   const queryClient = useQueryClient();
 
   // --- STATES ---
+  const [showStats, setShowStats] = useState(true);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("hide_stats_nhan_khau");
+      if (saved === "true") {
+        setShowStats(false);
+      }
+    } catch {
+      // ignore storage access error
+    }
+  }, []);
+
+  const toggleStats = () => {
+    setShowStats((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("hide_stats_nhan_khau", String(!next));
+      } catch {
+        // ignore storage access error
+      }
+      return next;
+    });
+  };
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMoiSinhModalOpen, setIsMoiSinhModalOpen] = useState(false);
   const [isDeathModalOpen, setIsDeathModalOpen] = useState(false);
@@ -414,6 +441,16 @@ export default function NhanKhauPage() {
           <div className="flex items-center gap-2">
             <Button
               type="button"
+              variant="ghost"
+              size="sm"
+              onClick={toggleStats}
+              leftIcon={showStats ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              className="text-slate-600 hover:text-slate-900"
+            >
+              {showStats ? "Thu gọn số liệu" : "Hiện số liệu"}
+            </Button>
+            <Button
+              type="button"
               variant="secondary"
               size="md"
               onClick={() => setIsMoiSinhModalOpen(true)}
@@ -438,32 +475,34 @@ export default function NhanKhauPage() {
       />
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard
-          title="Tổng nhân khẩu"
-          value={statsData?.total ?? 0}
-          icon={<Users className="w-5 h-5 text-blue-600" />}
-          accent="blue"
-        />
-        <StatCard
-          title="Nam giới"
-          value={statsData?.male ?? 0}
-          icon={<User className="w-5 h-5 text-indigo-600" />}
-          accent="purple"
-        />
-        <StatCard
-          title="Nữ giới"
-          value={statsData?.female ?? 0}
-          icon={<User className="w-5 h-5 text-pink-600" />}
-          accent="rose"
-        />
-        <StatCard
-          title="Tuổi trung bình"
-          value={`${statsData?.avgAge ?? 0} tuổi`}
-          icon={<Calendar className="w-5 h-5 text-emerald-600" />}
-          accent="emerald"
-        />
-      </div>
+      {showStats && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+          <StatCard
+            variant="compact"
+            title="Tổng nhân khẩu"
+            value={statsData?.total ?? 0}
+            icon={<Users className="w-4 h-4" />}
+          />
+          <StatCard
+            variant="compact"
+            title="Nam giới"
+            value={statsData?.male ?? 0}
+            icon={<User className="w-4 h-4" />}
+          />
+          <StatCard
+            variant="compact"
+            title="Nữ giới"
+            value={statsData?.female ?? 0}
+            icon={<User className="w-4 h-4" />}
+          />
+          <StatCard
+            variant="compact"
+            title="Tuổi trung bình"
+            value={`${statsData?.avgAge ?? 0} tuổi`}
+            icon={<Calendar className="w-4 h-4" />}
+          />
+        </div>
+      )}
 
       {/* Filter Bar */}
       <div className="filter-bar">
